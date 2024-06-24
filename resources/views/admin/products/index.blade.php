@@ -32,45 +32,21 @@
 <!-- end page title -->
 
 <div class="row">
-    <div class="col-lg-12">
+    <div class="col-xl-12">
         <div class="card">
-            <div class="card-body">
-                <div class="row g-3">
-                    <!-- <div class="col-lg-3">
-                        <h6 class="card-title">Property</h6>
-                    </div> -->
-                    <div class="col-xl-9 col-sm-6">
+        <div class="card-header">
+                <div class="row align-items-center gy-3">
+                    <div class="col-lg-3 col-md-6">
                         <div class="search-box">
-                            <input type="text" class="form-control search" placeholder="Search products, category etc...">
+                            <input type="text" class="form-control search" id="data-table-search" placeholder="Search products">
                             <i class="ri-search-line search-icon"></i>
                         </div>
                     </div>
-                    <div class="col-xl-3 col-sm-6">
-                        <select class="form-control" id="idType" data-choices data-choices-search-true>
-                            <option value="0">Select All categories</option>
-                            @forelse($productCategories as $productCategory)
-                                <option value="{{ $productCategory->id }}">{{ $productCategory->name }}</option>
-                            @empty
-                                <option value="">There are no categories to show</option>
-                            @endforelse
-                        </select>
-                    </div>
-                </div><!--end row-->
-            </div><!--end card-body-->
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-xl-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <div class="flex-grow-1">
-                    <h5 class="card-title mb-0">Products</h5>
-                </div>
-                <div class="flex-shrink-0">
-                    <div class="d-flex flex-wrap align-items-start gap-2">
-                        <a href="{{ route('admin.products.create') }}" type="button" class="btn btn-primary add-btn"><i class="bi bi-plus-circle align-baseline me-1"></i> Add product</a>
+                    
+                    <div class="col-md-auto ms-md-auto">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <a href="{{ route('admin.products.create') }}" type="button" class="btn btn-primary add-btn ms-auto"><i class="bi bi-plus-circle align-baseline me-1"></i> Add product</a>
+                        </div>
                     </div>
                 </div>
             </div>
