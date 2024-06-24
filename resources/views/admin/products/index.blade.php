@@ -42,6 +42,16 @@
                             <i class="ri-search-line search-icon"></i>
                         </div>
                     </div>
+                    <div class="col-xl-3 col-sm-6">
+                        <select class="form-control" id="idType" data-choices data-choices-search-true>
+                            <option value="0">Select All categories</option>
+                            @forelse($productCategories as $productCategory)
+                                <option value="{{ $productCategory->id }}">{{ $productCategory->name }}</option>
+                            @empty
+                                <option value="">There are no categories to show</option>
+                            @endforelse
+                        </select>
+                    </div>
                     
                     <div class="col-md-auto ms-md-auto">
                         <div class="d-flex flex-wrap align-items-center gap-2">
