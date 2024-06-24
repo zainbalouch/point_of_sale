@@ -13,7 +13,7 @@ class SettingController extends Controller
 
     public function store(Request $request) {
         $request->validate([
-            'ticket_number_prefix' => 'required'
+            'invoice_number_prefix' => 'required'
         ]);
 
         $requestData = $request->except(['_token', '_method']);

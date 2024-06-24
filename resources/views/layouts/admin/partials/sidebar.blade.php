@@ -36,6 +36,12 @@
                 </li>
                 @endrole
                 <li class="nav-item">
+                    <a href="{{ route('admin.product_categories.index') }}" class="nav-link menu-link {{ request()->routeIs('admin.product_categories.*') ? 'active' : '' }}"> <i class="ph-gauge"></i> <span>Product categories</span> </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.products.index') }}" class="nav-link menu-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"> <i class="ph-gauge"></i> <span>Products</span> </a>
+                </li>
+                <li class="nav-item">
                     <a href="#settings" class="nav-link menu-link" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('settings.*') ? 'true' : 'false' }}" aria-controls="settings">
                         <i class="ph-wrench"></i> <span>Settings</span>
                     </a>

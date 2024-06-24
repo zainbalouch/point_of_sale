@@ -14,9 +14,13 @@ Route::group(
                 Route::get('/', 'DashboardController@index')->name('index');
             });
 
-            // Properties
-            // Route::get('/properties/data', 'PropertyController@data')->name('properties.data');
-            // Route::resource('properties', 'PropertyController')->names('properties');
+            // Product Categories
+            Route::get('/product-categories/data', 'ProductCategoryController@data')->name('product_categories.data');
+            Route::resource('product-categories', 'ProductCategoryController')->names('product_categories');
+
+            // Products
+            Route::get('/products/data', 'ProductController@data')->name('products.data');
+            Route::resource('products', 'ProductController')->names('products');
 
             // Users
             Route::resource('users', 'UserController')->except(['show']);

@@ -6,21 +6,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-12 property-grid-3 p-0">
-                <div class="property-box">
-                    <div class="property-image">
-                        <div class="property-slider">
-                            <a href="javascript:void(0)">
-                                <img src="{{ asset('assets/images/slides/slide_1.jpg') }}" class="bg-img" alt="">
-                            </a>
-                            <a href="javascript:void(0)">
-                                <img src="{{ asset('assets/images/slides/slide_2.jpg') }}" class="bg-img" alt="">
-                            </a>
-                            <a href="javascript:void(0)">
-                                <img src="{{ asset('assets/images/slides/slide_3.jpg') }}" class="bg-img" alt="">
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <h1>Welcome to Invoice Manager</h1>
             </div>
         </div>
     </div>

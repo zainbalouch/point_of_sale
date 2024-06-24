@@ -36,10 +36,10 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="mb-3">
-                                <label for="ticket-number-prefix" class="form-label">Ticket number prefix <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('ticket_number_prefix') is-invalid @enderror" id="ticket-number-prefix" placeholder="Enter ticket number prefix" name="ticket_number_prefix" value="{{ old('ticket_number_prefix', setting('ticket_number_prefix')) }}" required autocomplete="ticket_number_prefix" autofocus>
-                                <small class="text-info">The ticket number prefix for example: (SB-)</small>
-                                @error('ticket_number_prefix')
+                                <label for="invoice-number-prefix" class="form-label">Invoice number prefix <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('invoice_number_prefix') is-invalid @enderror" id="invoice-number-prefix" placeholder="Enter invoice number prefix" name="invoice_number_prefix" value="{{ old('invoice_number_prefix', setting('invoice_number_prefix')) }}" required autocomplete="invoice_number_prefix" autofocus>
+                                <small class="text-info">The invoice number prefix for example: (SBH-)</small>
+                                @error('invoice_number_prefix')
                                     <span class="invalid-feedback" role="alert">
                                         {{ $message }}
                                     </span>

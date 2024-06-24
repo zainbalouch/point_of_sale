@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css">
 
 <!-- Sweet Alert css-->
-<link href="{{ asset('static/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" >
+<link href="{{ asset('static/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css">
 @endsection
 
 @section('content')
@@ -17,11 +17,11 @@
 <div class="row">
     <div class="col-12">
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0">Amenities</h4>
+            <h4 class="mb-sm-0">Product categories</h4>
 
             <div class="page-title-right">
                 <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="{{ route('admin.reservations.index') }}">Amenities</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.product_categories.index') }}">Product categories</a></li>
                     <li class="breadcrumb-item active">Listing</li>
                 </ol>
             </div>
@@ -38,7 +38,7 @@
                 <div class="row g-3">
                     <div class="col-xl-12 col-sm-6">
                         <div class="search-box">
-                            <input type="text" class="form-control search" id="data-table-search" placeholder="Search amenities">
+                            <input type="text" class="form-control search" id="data-table-search" placeholder="Search product categories">
                             <i class="ri-search-line search-icon"></i>
                         </div>
                     </div>
@@ -53,18 +53,17 @@
         <div class="card">
             <div class="card-header d-flex align-items-center">
                 <div class="flex-grow-1">
-                    <h5 class="card-title mb-0">Amenities</h5>
+                    <h5 class="card-title mb-0">Product categories</h5>
                 </div>
                 <div class="flex-shrink-0">
                     <div class="d-flex flex-wrap align-items-start gap-2">
-                        <button class="btn btn-subtle-danger d-none" id="remove-actions" onClick="deleteMultiple()"><i class="ri-delete-bin-2-line"></i></button>
-                        <a href="{{ route('admin.amenities.create') }}" type="button" class="btn btn-primary add-btn"><i class="bi bi-plus-circle align-baseline me-1"></i> Add amenity</a>
+                        <a href="{{ route('admin.product_categories.create') }}" type="button" class="btn btn-primary add-btn"><i class="bi bi-plus-circle align-baseline me-1"></i> Add product category</a>
                     </div>
                 </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive table datatable">
-                    <table id="amenities-table" class="display table table-bordered table-nowrap table-striped" style="width:100%">
+                    <table id="product-categories-table" class="display table table-bordered table-nowrap table-striped" style="width:100%">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -103,42 +102,33 @@
 
 <script>
     $(document).ready(function() {
-        let amenitiesTable = $('#amenities-table').DataTable({
+        let productCategoriesTable = $('#product-categories-table').DataTable({
             dom: "tiplr",
             processing: true,
             serverSide: true,
-            ajax: "{{ route('admin.amenities.data') }}",
+            ajax: "{{ route('admin.product_categories.data') }}",
             order: [
-                [3, 'desc']
+                [2, 'desc']
             ],
-            columns: [{
-                    data: 'id',
-                    name: 'id'
+            columns: [
+            { data: 'id', name: 'id' },
+            { data: 'name', name: 'name' },
+            { data: 'breadcrumbs', name: 'breadcrumbs' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'actions', name: 'actions', searchable: false, sortable: false, width: '20%' }
+        ],
+        columnDefs: [
+            {
+                targets: 2,
+                render: function(data, type, row, meta) {
+                    return data.join(' -> ');
                 },
-                {
-                    data: 'name',
-                    name: 'name'
-                },
-                {
-                    data: 'category',
-                    name: 'category'
-                },
-                {
-                    data: 'created_at',
-                    name: 'created_at'
-                },
-                {
-                    data: 'actions',
-                    name: 'actions',
-                    searchable: false,
-                    sortable: false,
-                    width: '20%'
-                }
-            ]
+            },
+        ],
         });
 
         $('#data-table-search').keyup(function() {
-            amenitiesTable.search(this.value).draw();
+            productCategoriesTable.search(this.value).draw();
         });
 
         // SweetAlert2 for delete buttons
