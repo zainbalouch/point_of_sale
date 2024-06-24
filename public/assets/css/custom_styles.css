@@ -1,0 +1,106 @@
+.loader-wrapper {
+    z-index: 1001;
+    display: none;
+}
+
+.dropdown .dropdown-menu {
+    animation: none !important;
+}
+
+header.header-4 .menu .toggle-nav i {
+    color: #586167;
+    font-size: 30px;
+}
+
+header.header-4 .main-navbar .nav-menu .simple-nav-link>li>a::after {
+    content: none;
+}
+
+header .main-navbar .nav-menu>li .nav-submenu {
+    -webkit-transition: none !important;
+    transition: none !important;
+}
+
+.property-box {
+    border-radius: 0px !important;
+}
+
+/* Logo on desktop */
+.logo {
+    width: 100px !important;
+}
+
+/* Footer logo on desktop */
+.footer-logo {
+    width: 100% !important;
+}
+
+/* Accordion plus icon on mobile  */
+@media (max-width: 1199px) {
+    .according-menu {
+        display: none;
+    }
+}
+
+/* Language menu */
+header .header-right .right-menu ul .dropdown ul.nav-submenu.open {
+    opacity: 1;
+    visibility: visible;
+    -webkit-transition: none; /* Disable transition for Webkit browsers */
+    transition: none; /* Disable transition */
+    margin-top: 15px;
+    z-index: 1;
+}
+
+/* Logo on mobile */
+@media (max-width: 480px) {
+    header.light-header .menu .brand-logo {
+        width: 85;
+    }
+}
+
+/* Sidebar menu on mobile */
+@media (max-width: 767px) {
+    .toggle-nav i {
+        font-size: 20px !important;
+        margin-bottom: 4px;
+    }
+}
+
+/* Top navbar right icons on mobile */
+@media (max-width: 575px) {
+    header.light-header .menu .header-right li a svg {
+        width: 30px !important;
+        height: 20px;
+    }
+}
+
+/* Contact page banner on desktop */
+@media (min-width: 575px) {
+    .breadcrumb-section {
+        height: 900px;
+    }
+}
+
+
+/* Review user avatar */
+.review .review-box .media>img {
+    border-radius: 50%;
+}
+
+.img-70 {
+    width: 70px;
+    height: 70px;
+}
+
+@media (max-width: 575px) {
+    .review .review-box .media img.img-70 {
+        width: 70px !important;
+        height: 70px !important;
+    }
+}
+
+/* Footer */
+footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+}
