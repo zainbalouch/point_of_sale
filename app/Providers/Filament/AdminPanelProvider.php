@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandLogo(asset('assets/images/estilo_logo.png'))
-            ->brandLogoHeight('8rem')
+            ->brandLogoHeight('3rem')
             ->colors([
                 'primary' => Color::Violet,
             ])
