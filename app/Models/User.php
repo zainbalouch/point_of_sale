@@ -11,8 +11,11 @@ use Laratrust\Contracts\LaratrustUser;
 use Laratrust\Traits\HasRolesAndPermissions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
+use Filament\Panel;
 
-class User extends Authenticatable implements LaratrustUser
+class User extends Authenticatable implements LaratrustUser, FilamentUser, HasName
 {
     use HasApiTokens, HasFactory, Notifiable, HasRolesAndPermissions, LogsActivity;
 
@@ -51,6 +54,16 @@ class User extends Authenticatable implements LaratrustUser
 
     public function getFullNameAttribute() {
         return $this->first_name . ' ' . $this->last_name;
+    }
+
+    public function getFilamentName(): string
+    {
+        return "{$this->first_name} {$this->last_name}";
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
     }
 
     public function wishListProperties() {
