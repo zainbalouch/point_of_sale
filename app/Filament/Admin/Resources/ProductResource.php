@@ -46,7 +46,7 @@ class ProductResource extends Resource
                 'lg' => 5,
             ])
             ->schema([
-                Section::make(__('Product Information'))
+                Section::make(__('Product information'))
                     ->columnSpan([
                         'default' => 1,
                         'sm' => 3,
@@ -252,6 +252,6 @@ class ProductResource extends Resource
 
     public static function getNavigationGroup(): string
     {
-        return __('E-commerce');
+        return __('Manage products');
     }
 }

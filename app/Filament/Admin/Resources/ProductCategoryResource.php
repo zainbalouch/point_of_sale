@@ -205,6 +205,6 @@ class ProductCategoryResource extends Resource
     // Navigation group function
     public static function getNavigationGroup(): string
     {
-        return __('E-commerce');
+        return __('Manage products');
     }
 }
