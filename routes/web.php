@@ -17,7 +17,7 @@ Route::group(
     ['prefix' => LaravelLocalization::setLocale(), 'middleware' => ['localeSessionRedirect', 'localizationRedirect', 'localeViewPath']],
     function () {
         Route::get('/', function() {
-            return redirect()->route('admin.dashboard.index');
+            return redirect()->route('filament.admin.auth.login');
         })->name('website.index');
 
         Auth::routes();
