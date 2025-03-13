@@ -6,14 +6,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductCategory extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'parent_id'
+        'name_en',
+        'name_ar',
+        'description_en',
+        'description_ar',
+        'slug',
+        'parent_id',
     ];
 
     public function parentCategory()
@@ -36,13 +41,11 @@ class ProductCategory extends Model
         $category = $this->find($categoryId);
 
         if ($category && $category->id !== $startCategoryId) {
-            // Add the category to breadcrumbs only if it has children
-            if ($category->childCategories->isNotEmpty()) {
-                $breadcrumbs[] = [
-                    'id' => $category->id,
-                    'name' => $prefix . $category->name,
-                ];
-            }
+            // Add the current category regardless of children
+            $breadcrumbs[] = [
+                'id' => $category->id,
+                'name' => $prefix . $category->{'name_' . app()->getLocale()},
+            ];
 
             if ($category->parent_id) {
                 $breadcrumbs = array_merge(
