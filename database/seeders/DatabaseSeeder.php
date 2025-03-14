@@ -6,6 +6,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Database\Seeders\LaratrustSeeder;
 use Database\Seeders\UsersTableSeeder;
+use Database\Seeders\InvoiceStatusSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(LaratrustSeeder::class);
         $this->call(UsersTableSeeder::class);
+        $this->call(InvoiceStatusSeeder::class);
 
         // \App\Models\User::factory(10)->create();
 

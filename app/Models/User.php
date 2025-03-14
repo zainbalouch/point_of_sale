@@ -30,6 +30,7 @@ class User extends Authenticatable implements LaratrustUser, FilamentUser, HasNa
         'last_name',
         'email',
         'password',
+        'company_id',
     ];
 
     /**
@@ -51,6 +52,14 @@ class User extends Authenticatable implements LaratrustUser, FilamentUser, HasNa
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Get the company this user belongs to
+     */
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     public function getFullNameAttribute() {
         return $this->first_name . ' ' . $this->last_name;

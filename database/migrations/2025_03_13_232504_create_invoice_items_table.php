@@ -11,20 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_items', function (Blueprint $table) {
+        Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
+            $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
+            
+            // Direct reference fields
+            $table->morphs('invoiceable_item');
             
             // Product snapshot data
             $table->string('product_name_en');
             $table->string('product_name_ar');
             $table->text('product_description_en')->nullable();
             $table->text('product_description_ar')->nullable();
-            $table->string('product_sku');
-            $table->string('product_code')->nullable(); // Added for consistency with invoice items
-            
-            // Reference to the original product (optional - may be null if product is deleted)
-            $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
+            $table->string('product_sku')->nullable();
+            $table->string('product_code')->nullable();
             
             // Quantities and amounts
             $table->integer('quantity');
@@ -32,14 +32,15 @@ return new class extends Migration
             
             // Tax information - reference plus snapshot value
             $table->foreignId('tax_rate_id')->nullable()->constrained('tax_rates')->nullOnDelete()->comment('Reference to the tax rate used');
-            $table->integer('tax_rate_snapshot')->default(0)->comment('Snapshot of the tax rate in basis points at time of order'); 
-            $table->string('tax_rate_name_snapshot')->nullable()->comment('Snapshot of the tax rate name at time of order');
+            $table->integer('tax_rate_snapshot')->default(0)->comment('Snapshot of the tax rate in basis points at time of invoicing'); 
+            $table->string('tax_rate_name_snapshot')->nullable()->comment('Snapshot of the tax rate name at time of invoicing');
             $table->boolean('is_vat_exempt')->default(false)->comment('Whether this item is exempt from VAT');
             $table->string('vat_exemption_reason')->nullable()->comment('Reason for VAT exemption');
             $table->bigInteger('tax_amount')->default(0);
             
-            $table->bigInteger('discount_amount')->default(0); // Added for discount tracking
-            $table->bigInteger('total_price');
+            $table->bigInteger('discount_amount')->default(0);
+            $table->bigInteger('subtotal');
+            $table->bigInteger('total');
             
             $table->timestamps();
             $table->softDeletes();
@@ -51,6 +52,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('order_items');
+        Schema::dropIfExists('invoice_items');
     }
 };

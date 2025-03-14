@@ -10,19 +10,20 @@ use Spatie\Activitylog\LogOptions;
 use App\Traits\Notable;
 use App\Models\User;
 
-class OrderItem extends Model
+class InvoiceItem extends Model
 {
     use HasFactory, LogsActivity, SoftDeletes, Notable;
 
     protected $fillable = [
-        'order_id',
+        'invoice_id',
+        'invoiceable_item_type',
+        'invoiceable_item_id',
         'product_name_en',
         'product_name_ar',
         'product_description_en',
         'product_description_ar',
         'product_sku',
         'product_code',
-        'product_id',
         'quantity',
         'unit_price',
         'tax_rate_id',
@@ -30,23 +31,24 @@ class OrderItem extends Model
         'tax_rate_name_snapshot',
         'tax_amount',
         'discount_amount',
-        'total_price',
+        'subtotal',
+        'total',
     ];
 
     /**
-     * Get the order this item belongs to
+     * Get the invoice this item belongs to
      */
-    public function order()
+    public function invoice()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Invoice::class);
     }
 
     /**
-     * Get the product associated with this item
+     * Get the invoiceable item entity (product, order item, etc)
      */
-    public function product()
+    public function invoiceableItem()
     {
-        return $this->belongsTo(Product::class);
+        return $this->morphTo();
     }
 
     /**
@@ -58,12 +60,12 @@ class OrderItem extends Model
     }
 
     /**
-     * Create an order item from a product
-     * This takes a snapshot of the product data at order creation time
+     * Create an invoice item from a product
+     * This takes a snapshot of the product data at invoice creation time
      *
      * @param Product $product
-     * @param array $itemData Additional data for the order item
-     * @return OrderItem
+     * @param array $itemData Additional data for the invoice item
+     * @return InvoiceItem
      */
     public static function createFromProduct(Product $product, array $itemData = [])
     {
@@ -112,16 +114,54 @@ class OrderItem extends Model
             'product_description_ar' => $product->description_ar,
             'product_sku' => $product->sku,
             'product_code' => $product->code,
-            'product_id' => $product->id,
             'unit_price' => $itemData['unit_price'] ?? $product->price,
             'tax_rate_id' => $taxRateId,
             'tax_rate_snapshot' => $taxRateSnapshot,
             'tax_rate_name_snapshot' => $taxRateNameSnapshot,
-            'discount_amount' => $itemData['discount_amount'] ?? 0,
         ];
 
-        // Merge product data with additional item data
+        // Merge product data with additional invoice item data
         $mergedData = array_merge($productData, $itemData);
+
+        // Set the polymorphic relationship
+        $mergedData['invoiceable_item_type'] = get_class($product);
+        $mergedData['invoiceable_item_id'] = $product->id;
+
+        return new self($mergedData);
+    }
+
+    /**
+     * Create an invoice item from an order item
+     * This takes the snapshot data from the order item
+     *
+     * @param OrderItem $orderItem
+     * @param array $itemData Additional data for the invoice item
+     * @return InvoiceItem
+     */
+    public static function createFromOrderItem(OrderItem $orderItem, array $itemData = [])
+    {
+        // Extract data from order item
+        $orderItemData = [
+            'product_name_en' => $orderItem->product_name_en,
+            'product_name_ar' => $orderItem->product_name_ar,
+            'product_description_en' => $orderItem->product_description_en,
+            'product_description_ar' => $orderItem->product_description_ar,
+            'product_sku' => $orderItem->product_sku,
+            'product_code' => $orderItem->product_code,
+            'quantity' => $itemData['quantity'] ?? $orderItem->quantity,
+            'unit_price' => $itemData['unit_price'] ?? $orderItem->unit_price,
+            'tax_rate_id' => $orderItem->tax_rate_id,
+            'tax_rate_snapshot' => $orderItem->tax_rate_snapshot,
+            'tax_rate_name_snapshot' => $orderItem->tax_rate_name_snapshot,
+            'discount_amount' => $itemData['discount_amount'] ?? $orderItem->discount_amount,
+        ];
+
+        // Merge order item data with additional invoice item data
+        $mergedData = array_merge($orderItemData, $itemData);
+
+        // Set the polymorphic relationship to the order item
+        $mergedData['invoiceable_item_type'] = get_class($orderItem);
+        $mergedData['invoiceable_item_id'] = $orderItem->id;
 
         return new self($mergedData);
     }
@@ -178,41 +218,52 @@ class OrderItem extends Model
         $this->attributes['discount_amount'] = $value * 100;
     }
 
-    public function getTotalPriceAttribute($value)
+    public function getSubtotalAttribute($value)
     {
         return $value / 100;
     }
 
-    public function setTotalPriceAttribute($value)
+    public function setSubtotalAttribute($value)
     {
-        $this->attributes['total_price'] = $value * 100;
+        $this->attributes['subtotal'] = $value * 100;
+    }
+
+    public function getTotalAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setTotalAttribute($value)
+    {
+        $this->attributes['total'] = $value * 100;
     }
 
     /**
-     * Calculate the total price for this item
+     * Calculate the amounts for this item
      */
-    public function calculateTotal()
+    public function calculateAmounts()
     {
-        // Calculate raw subtotal
-        $subtotal = $this->quantity * $this->unit_price;
+        // Calculate raw subtotal (quantity * unit price)
+        $rawSubtotal = $this->quantity * $this->unit_price;
         
-        // Calculate tax amount - using the accessor ensures we get the percentage value
-        $taxAmount = $subtotal * ($this->tax_rate / 100);
+        // Calculate tax amount based on tax rate - using the accessor ensures we get the percentage value
+        $taxAmount = $rawSubtotal * ($this->tax_rate / 100);
         
-        // Calculate final total
-        $total = $subtotal + $taxAmount - $this->discount_amount;
+        // Assume discount_amount is set separately
+        
+        // Calculate total
+        $total = $rawSubtotal + $taxAmount - $this->discount_amount;
 
         $this->update([
+            'subtotal' => $rawSubtotal,
             'tax_amount' => $taxAmount,
-            'total_price' => $total
+            'total' => $total
         ]);
         
-        // Update the order totals
-        if ($this->order) {
-            $this->order->calculateTotals();
+        // Make sure to recalculate invoice totals
+        if ($this->invoice) {
+            $this->invoice->calculateTotals();
         }
-        
-        return $this;
     }
 
     /**
