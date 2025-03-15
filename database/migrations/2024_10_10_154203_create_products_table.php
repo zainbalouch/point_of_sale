@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('code')->unique(); // Unique product code
             $table->unsignedInteger('price')->nullable();
             $table->unsignedInteger('sale_price')->nullable();
+            $table->string('image_url')->nullable();
             $table->foreignId('currency_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('product_category_id')->nullable()->constrained()->onDelete('cascade');
             $table->timestamps();

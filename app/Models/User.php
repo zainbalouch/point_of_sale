@@ -53,14 +53,6 @@ class User extends Authenticatable implements LaratrustUser, FilamentUser, HasNa
         'password' => 'hashed',
     ];
 
-    /**
-     * Get the company this user belongs to
-     */
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
     public function getFullNameAttribute() {
         return $this->first_name . ' ' . $this->last_name;
     }
@@ -73,10 +65,6 @@ class User extends Authenticatable implements LaratrustUser, FilamentUser, HasNa
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
-    }
-
-    public function wishListProperties() {
-        return $this->belongsToMany(Property::class, 'user_wish_list_property', 'user_id', 'property_id');
     }
 
     public function getActivitylogOptions(): LogOptions

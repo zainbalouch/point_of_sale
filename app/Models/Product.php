@@ -7,12 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\Invoiceable;
-use App\Traits\Notable;
 
 class Product extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes, Invoiceable, Notable;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'name_en',
@@ -31,14 +29,6 @@ class Product extends Model
     ];
 
     protected $appends = ['image_url_path'];
-
-    /**
-     * Get the company this product belongs to
-     */
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
 
     public function getImageUrlPathAttribute()
     {
@@ -83,34 +73,6 @@ class Product extends Model
     public function currency()
     {
         return $this->belongsTo(Currency::class, 'currency_id');
-    }
-
-    /**
-     * Get invoice items related to this product
-     */
-    public function invoiceItems()
-    {
-        return $this->morphMany(InvoiceItem::class, 'invoiceable_item');
-    }
-
-    /**
-     * Scope a query to only include products for a given company
-     */
-    public function scopeForCompany($query, $companyId)
-    {
-        return $query->where('company_id', $companyId);
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Set the company ID from the authenticated user if not provided
-        static::creating(function ($product) {
-            if (empty($product->company_id) && auth()->check()) {
-                $product->company_id = auth()->user()->company_id;
-            }
-        });
     }
 
     public function getActivitylogOptions(): LogOptions
