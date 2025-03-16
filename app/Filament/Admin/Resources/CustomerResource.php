@@ -77,8 +77,7 @@ class CustomerResource extends Resource
                                     ->label(__('Company'))
                                     ->relationship('company', 'legal_name')
                                     ->searchable()
-                                    ->preload()
-                                    ->required(),
+                                    ->preload(),
                                     
                                 Toggle::make('is_active')
                                     ->label(__('Active Status'))
