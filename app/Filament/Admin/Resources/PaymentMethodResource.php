@@ -18,7 +18,6 @@ class PaymentMethodResource extends Resource
     protected static ?string $model = PaymentMethod::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
-    protected static ?string $navigationGroup = 'Sales';
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
@@ -209,18 +208,18 @@ class PaymentMethodResource extends Resource
             ]);
     }
     
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::active()->count();
-    }
-    
     public static function getModelLabel(): string
     {
-        return __('Payment Method');
+        return __('Payment method');
     }
     
     public static function getPluralModelLabel(): string
     {
-        return __('Payment Methods');
+        return __('Payment methods');
+    }
+    
+    public static function getNavigationGroup(): string
+    {
+        return __('Settings');
     }
 }

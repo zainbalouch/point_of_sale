@@ -18,7 +18,6 @@ class OrderStatusResource extends Resource
     protected static ?string $model = OrderStatus::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Sales';
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -152,18 +151,18 @@ class OrderStatusResource extends Resource
             ]);
     }
     
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::count();
-    }
-    
     public static function getModelLabel(): string
     {
-        return __('Order Status');
+        return __('Order status');
     }
     
     public static function getPluralModelLabel(): string
     {
-        return __('Order Statuses');
+        return __('Order statuses');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Sales');
     }
 }

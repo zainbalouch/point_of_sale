@@ -111,12 +111,12 @@ class AddressTypeResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Address Type');
+        return __('Address type');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Address Types');
+        return __('Address types');
     }
 
     public static function getNavigationGroup(): string

@@ -19,24 +19,23 @@ class PointOfSaleResource extends Resource
     protected static ?string $model = PointOfSale::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
-    protected static ?string $navigationGroup = 'Inventory';
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Basic Information')
+                Forms\Components\Section::make(__('Basic information'))
                     ->schema([
                         Forms\Components\TextInput::make('name_en')
-                            ->label('Name (English)')
+                            ->label(__('Name (English)'))
                             ->required()
                             ->maxLength(255)
                             ->placeholder('E.g., Main Store, Branch Office, Warehouse')
                             ->columnSpan(['sm' => 1]),
                         
                         Forms\Components\TextInput::make('name_ar')
-                            ->label('Name (Arabic)')
+                            ->label(__('Name (Arabic)'))
                             ->required()
                             ->maxLength(255)
                             ->placeholder('Arabic translation')
@@ -64,9 +63,9 @@ class PointOfSaleResource extends Resource
                             ->columnSpan(['sm' => 2]),
                         
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Active')
+                            ->label(__('Active'))
                             ->default(true)
-                            ->helperText('Inactive points of sale will not be available for transactions')
+                            ->helperText(__('Inactive points of sale will not be available for transactions'))
                             ->onIcon('heroicon-m-check')
                             ->offIcon('heroicon-m-x-mark')
                             ->inline(false)
@@ -77,8 +76,8 @@ class PointOfSaleResource extends Resource
                 Forms\Components\Section::make('Description')
                     ->schema([
                         Forms\Components\RichEditor::make('description_en')
-                            ->label('Description (English)')
-                            ->placeholder('Enter details about this point of sale')
+                            ->label(__('Description (English)'))
+                            ->placeholder(__('Enter details about this point of sale'))
                             ->toolbarButtons([
                                 'bold',
                                 'italic',
@@ -89,8 +88,8 @@ class PointOfSaleResource extends Resource
                             ->columnSpan(['sm' => 1]),
                         
                         Forms\Components\RichEditor::make('description_ar')
-                            ->label('Description (Arabic)')
-                            ->placeholder('Arabic description')
+                            ->label(__('Description (Arabic)'))
+                            ->placeholder(__('Arabic description'))
                             ->toolbarButtons([
                                 'bold',
                                 'italic',
@@ -106,12 +105,12 @@ class PointOfSaleResource extends Resource
                 Forms\Components\Section::make('Additional Details')
                     ->schema([
                         Forms\Components\KeyValue::make('meta')
-                            ->label('Additional Metadata')
-                            ->keyLabel('Key')
-                            ->valueLabel('Value')
-                            ->addButtonLabel('Add Field')
-                            ->keyPlaceholder('Enter key')
-                            ->valuePlaceholder('Enter value')
+                            ->label(__('Additional Metadata'))
+                            ->keyLabel(__('Key'))
+                            ->valueLabel(__('Value'))
+                            ->addButtonLabel(__('Add Field'))
+                            ->keyPlaceholder(__('Enter key'))
+                            ->valuePlaceholder(__('Enter value'))
                             ->columnSpan(2),
                     ])
                     ->collapsible()
@@ -124,43 +123,43 @@ class PointOfSaleResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name_en')
-                    ->label('Name (English)')
+                    ->label(__('Name (English)'))
                     ->searchable()
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('name_ar')
-                    ->label('Name (Arabic)')
+                    ->label(__('Name (Arabic)'))
                     ->searchable()
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('company.legal_name')
-                    ->label('Company')
+                    ->label(__('Company'))
                     ->searchable()
                     ->sortable(),
                 
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->boolean()
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('products_count')
-                    ->label('Products')
+                    ->label(__('Products'))
                     ->counts('products')
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('users_count')
-                    ->label('Staff')
+                    ->label(__('Staff'))
                     ->counts('users')
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('Created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Updated')
+                    ->label(__('Updated'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -170,23 +169,23 @@ class PointOfSaleResource extends Resource
                 
                 Tables\Filters\SelectFilter::make('company_id')
                     ->relationship('company', 'legal_name')
-                    ->label('Company')
+                    ->label(__('Company'))
                     ->searchable()
                     ->preload(),
                 
                 Tables\Filters\SelectFilter::make('is_active')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->options([
-                        '1' => 'Active',
-                        '0' => 'Inactive',
+                        '1' => __('Active'),
+                        '0' => __('Inactive'),
                     ]),
                 
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label('Created From'),
+                            ->label(__('Created From')),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label('Created Until'),
+                            ->label(__('Created Until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -212,14 +211,14 @@ class PointOfSaleResource extends Resource
                     Tables\Actions\RestoreBulkAction::make(),
                     
                     Tables\Actions\BulkAction::make('activate')
-                        ->label('Activate Selected')
+                        ->label(__('Activate Selected'))
                         ->icon('heroicon-o-check')
                         ->action(fn (array $records) => PointOfSale::whereIn('id', $records)->update(['is_active' => true]))
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),
                     
                     Tables\Actions\BulkAction::make('deactivate')
-                        ->label('Deactivate Selected')
+                        ->label(__('Deactivate Selected'))
                         ->icon('heroicon-o-x-mark')
                         ->action(fn (array $records) => PointOfSale::whereIn('id', $records)->update(['is_active' => false]))
                         ->requiresConfirmation()
@@ -268,14 +267,9 @@ class PointOfSaleResource extends Resource
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            'Company' => $record->company->legal_name,
-            'Status' => $record->is_active ? 'Active' : 'Inactive',
+            __('Company') => $record->company->legal_name,
+            __('Status') => $record->is_active ? __('Active') : __('Inactive'),
         ];
-    }
-    
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('is_active', true)->count();
     }
     
     public static function getModelLabel(): string
@@ -286,5 +280,10 @@ class PointOfSaleResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('Points of Sale');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Inventory');
     }
 }

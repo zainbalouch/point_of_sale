@@ -3,6 +3,32 @@
     "Products": "المنتجات",
     "Product": "منتج",
     "Product categories": "فئات المنتجات",
+    "Settings": "الإعدادات",
+    "Sales": "المبيعات",
+    "Inventory": "المخزن",
+    "Point of Sale": "نقطة البيع",
+    "Points of Sale": "نقاط البيع",
+    "Payment methods": "طرق الدفع",
+    "Payment statuses": "حالات الدفع",
+    "Order statuses": "حالات الطلب",
+    "Order status": "حالة الطلب",
+    "Customers": "العملاء",
+    "Customer": "عميل",
+    "Invoices": "الفواتير",
+    "Invoice": "فاتورة",
+    "Invoice items": "عناصر الفاتورة",
+    "Invoice item": "عنصر فاتورة",
+    "Orders": "الطلبات",
+    "Order": "طلب",
+    "Order items": "عناصر الطلب",
+    "Order item": "عنصر طلب",
+    "Addresses": "العنوان",
+    "Address": "العنوان",
+    "Address types": "أنواع العنوان",
+    "Address type": "نوع العنوان",
+    "Currencies": "العملات",
+    "Currency": "العملة",
+
 
     "Name (English)": "الاسم (الإنجليزية)",
     "Name (Arabic)": "الاسم (العربية)",
@@ -11,7 +37,9 @@
     "Price": "السعر",
     "Quantity": "الكمية",
     "Image": "الصورة",
+    "Company": "شركة",
 
+    "Basic information": "المعلومات الأساسية",
     "Product information": "معلومات المنتج"
     
 }

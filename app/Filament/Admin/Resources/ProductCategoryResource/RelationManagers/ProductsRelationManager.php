@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Resources\PointOfSaleResource\RelationManagers;
+namespace App\Filament\Admin\Resources\ProductCategoryResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -10,7 +10,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Currency;
-use App\Models\ProductCategory;
 
 class ProductsRelationManager extends RelationManager
 {
@@ -93,9 +92,9 @@ class ProductsRelationManager extends RelationManager
                 
                 Forms\Components\Section::make('Organization')
                     ->schema([
-                        Forms\Components\Select::make('product_category_id')
-                            ->label('Category')
-                            ->relationship('category', 'name_en')
+                        Forms\Components\Select::make('point_of_sale_id')
+                            ->label('Point of Sale')
+                            ->relationship('pointOfSale', 'name_en')
                             ->searchable()
                             ->preload(),
                         
@@ -145,8 +144,8 @@ class ProductsRelationManager extends RelationManager
                     ->money(fn ($record) => $record->currency?->code ?? 'USD')
                     ->sortable(),
                 
-                Tables\Columns\TextColumn::make('category.name_en')
-                    ->label('Category')
+                Tables\Columns\TextColumn::make('pointOfSale.name_en')
+                    ->label('Point of Sale')
                     ->sortable(),
                 
                 Tables\Columns\IconColumn::make('is_active')
@@ -157,9 +156,9 @@ class ProductsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
                 
-                Tables\Filters\SelectFilter::make('product_category_id')
-                    ->relationship('category', 'name_en')
-                    ->label('Category')
+                Tables\Filters\SelectFilter::make('point_of_sale_id')
+                    ->relationship('pointOfSale', 'name_en')
+                    ->label('Point of Sale')
                     ->searchable()
                     ->preload(),
                 
@@ -171,7 +170,11 @@ class ProductsRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['product_category_id'] = $this->getOwnerRecord()->id;
+                        return $data;
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

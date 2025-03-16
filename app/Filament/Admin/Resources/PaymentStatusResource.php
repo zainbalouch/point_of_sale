@@ -18,7 +18,7 @@ class PaymentStatusResource extends Resource
     protected static ?string $model = PaymentStatus::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
-    protected static ?string $navigationGroup = 'Sales';
+
     protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
@@ -152,18 +152,18 @@ class PaymentStatusResource extends Resource
             ]);
     }
     
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::count();
-    }
-    
     public static function getModelLabel(): string
     {
-        return __('Payment Status');
+        return __('Payment status');
     }
     
     public static function getPluralModelLabel(): string
     {
-        return __('Payment Statuses');
+        return __('Payment statuses');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Settings');
     }
 }
