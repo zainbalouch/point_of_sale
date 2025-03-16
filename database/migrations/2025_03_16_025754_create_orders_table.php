@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('customer_email');
             $table->string('customer_phone_number');
             $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('order_status_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedBigInteger('shipping_fee');
             $table->unsignedBigInteger('subtotal');
