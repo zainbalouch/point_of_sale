@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class Company extends Model
+class Customer extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
@@ -20,12 +21,11 @@ class Company extends Model
      * @var array
      */
     protected $fillable = [
-        'legal_name',
-        'tax_number',
-        'website',
+        'first_name',
+        'last_name',
         'email',
         'phone_number',
-        'logo',
+        'company_id',
         'is_active',
         'meta',
     ];
@@ -41,31 +41,31 @@ class Company extends Model
     ];
 
     /**
-     * Get the users belonging to the company.
+     * Get the company that the customer belongs to.
      */
-    public function users(): HasMany
+    public function company(): BelongsTo
     {
-        return $this->hasMany(User::class);
+        return $this->belongsTo(Company::class);
     }
 
     /**
-     * Get the customers belonging to the company.
-     */
-    public function customers(): HasMany
-    {
-        return $this->hasMany(Customer::class);
-    }
-
-    /**
-     * Get the orders associated with the company.
+     * Get all orders for the customer.
      */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
-    
+
     /**
-     * Get the addresses associated with the company.
+     * Get the customer's full name.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return $this->first_name . ' ' . $this->last_name;
+    }
+
+    /**
+     * Get the addresses associated with the customer.
      */
     public function addresses(): MorphMany
     {
@@ -73,7 +73,7 @@ class Company extends Model
     }
 
     /**
-     * Get the notes associated with the company.
+     * Get the notes associated with the customer.
      */
     public function notes(): MorphMany
     {

@@ -5,8 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+
 class Address extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
@@ -25,22 +28,39 @@ class Address extends Model
         'details',
     ];
 
-    public function addressable()
+    /**
+     * Get the parent addressable model.
+     * 
+     * This could be one of several models:
+     * - Company
+     * - User
+     * - Customer
+     */
+    public function addressable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    public function type()
+    /**
+     * Get the address type associated with the address.
+     */
+    public function type(): BelongsTo
     {
-        return $this->belongsTo(AddressType::class);
+        return $this->belongsTo(AddressType::class, 'address_type_id');
     }
 
-    public function country()
+    /**
+     * Get the country associated with the address.
+     */
+    public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
     }
 
-    public function getFullAddressAttribute()
+    /**
+     * Get the full address as a formatted string.
+     */
+    public function getFullAddressAttribute(): string
     {
         return $this->street . ', ' . $this->postal_code . ', ' . $this->country->name;
     }

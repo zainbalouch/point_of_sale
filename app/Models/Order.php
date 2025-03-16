@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -15,9 +18,7 @@ class Order extends Model
     protected $fillable = [
         'number',
         'customer_id',
-        'customer_name',
-        'customer_email',
-        'customer_phone_number',
+        'user_id',
         'company_id',
         'order_status_id',
         'shipping_fee',
@@ -46,17 +47,25 @@ class Order extends Model
     ];
 
     /**
+     * Get the user associated with the order.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Get the customer associated with the order.
      */
-    public function customer()
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(Customer::class);
     }
 
     /**
      * Get the company associated with the order.
      */
-    public function company()
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
@@ -64,7 +73,7 @@ class Order extends Model
     /**
      * Get the status of the order.
      */
-    public function status()
+    public function status(): BelongsTo
     {
         return $this->belongsTo(OrderStatus::class, 'order_status_id');
     }
@@ -72,7 +81,7 @@ class Order extends Model
     /**
      * Get the payment method for the order.
      */
-    public function paymentMethod()
+    public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class);
     }
@@ -80,7 +89,7 @@ class Order extends Model
     /**
      * Get the currency used for the order.
      */
-    public function currency()
+    public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
     }
@@ -88,7 +97,7 @@ class Order extends Model
     /**
      * Get the billing address for the order.
      */
-    public function billingAddress()
+    public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'billing_address_id');
     }
@@ -96,7 +105,7 @@ class Order extends Model
     /**
      * Get the shipping address for the order.
      */
-    public function shippingAddress()
+    public function shippingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'shipping_address_id');
     }
@@ -104,7 +113,7 @@ class Order extends Model
     /**
      * Get the items for the order.
      */
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
@@ -112,7 +121,7 @@ class Order extends Model
     /**
      * Get the notes for the order.
      */
-    public function notes()
+    public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
     }

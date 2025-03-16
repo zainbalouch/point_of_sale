@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Invoice extends Model
 {
@@ -83,52 +86,82 @@ class Invoice extends Model
     }
 
     // Relationships
-    public function items()
+    /**
+     * Get the items for the invoice.
+     */
+    public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
     }
 
-    public function status()
+    /**
+     * Get the status of the invoice.
+     */
+    public function status(): BelongsTo
     {
         return $this->belongsTo(InvoiceStatus::class, 'invoice_status_id');
     }
 
-    public function company()
+    /**
+     * Get the company associated with the invoice.
+     */
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
-    public function customer()
+    /**
+     * Get the customer associated with the invoice.
+     */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
 
-    public function billingAddress()
+    /**
+     * Get the billing address for the invoice.
+     */
+    public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'billing_address_id');
     }
 
-    public function shippingAddress()
+    /**
+     * Get the shipping address for the invoice.
+     */
+    public function shippingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'shipping_address_id');
     }
 
-    public function currency()
+    /**
+     * Get the currency used for the invoice.
+     */
+    public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
     }
 
-    public function issuedByUser()
+    /**
+     * Get the user who issued the invoice.
+     */
+    public function issuedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by_user');
     }
 
-    public function payments()
+    /**
+     * Get the payments for the invoice.
+     */
+    public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function notes()
+    /**
+     * Get the notes associated with the invoice.
+     */
+    public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
     }
