@@ -126,7 +126,7 @@ class ProductResource extends Resource
                             ->step(0.01),
 
                         TextInput::make('sale_price')
-                            ->label(__('Sale Price'))
+                            ->label(__('Sale price'))
                             ->numeric()
                             ->nullable()
                             ->minValue(0)
