@@ -1,0 +1,290 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\PointOfSaleResource\Pages;
+use App\Filament\Admin\Resources\PointOfSaleResource\RelationManagers;
+use App\Models\PointOfSale;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
+
+class PointOfSaleResource extends Resource
+{
+    protected static ?string $model = PointOfSale::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    protected static ?string $navigationGroup = 'Inventory';
+    protected static ?int $navigationSort = 1;
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Basic Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('name_en')
+                            ->label('Name (English)')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('E.g., Main Store, Branch Office, Warehouse')
+                            ->columnSpan(['sm' => 1]),
+                        
+                        Forms\Components\TextInput::make('name_ar')
+                            ->label('Name (Arabic)')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('Arabic translation')
+                            ->columnSpan(['sm' => 1]),
+                        
+                        Forms\Components\Select::make('company_id')
+                            ->relationship('company', 'legal_name')
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('legal_name')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('tax_number')
+                                    ->maxLength(50),
+                                Forms\Components\TextInput::make('email')
+                                    ->email()
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('phone_number')
+                                    ->tel()
+                                    ->maxLength(20),
+                            ])
+                            ->columnSpan(['sm' => 2]),
+                        
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true)
+                            ->helperText('Inactive points of sale will not be available for transactions')
+                            ->onIcon('heroicon-m-check')
+                            ->offIcon('heroicon-m-x-mark')
+                            ->inline(false)
+                            ->columnSpan(['sm' => 2]),
+                    ])
+                    ->columns(2),
+                
+                Forms\Components\Section::make('Description')
+                    ->schema([
+                        Forms\Components\RichEditor::make('description_en')
+                            ->label('Description (English)')
+                            ->placeholder('Enter details about this point of sale')
+                            ->toolbarButtons([
+                                'bold',
+                                'italic',
+                                'bulletList',
+                                'orderedList',
+                                'link',
+                            ])
+                            ->columnSpan(['sm' => 1]),
+                        
+                        Forms\Components\RichEditor::make('description_ar')
+                            ->label('Description (Arabic)')
+                            ->placeholder('Arabic description')
+                            ->toolbarButtons([
+                                'bold',
+                                'italic',
+                                'bulletList',
+                                'orderedList',
+                                'link',
+                            ])
+                            ->columnSpan(['sm' => 1]),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
+                
+                Forms\Components\Section::make('Additional Details')
+                    ->schema([
+                        Forms\Components\KeyValue::make('meta')
+                            ->label('Additional Metadata')
+                            ->keyLabel('Key')
+                            ->valueLabel('Value')
+                            ->addButtonLabel('Add Field')
+                            ->keyPlaceholder('Enter key')
+                            ->valuePlaceholder('Enter value')
+                            ->columnSpan(2),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name_en')
+                    ->label('Name (English)')
+                    ->searchable()
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('name_ar')
+                    ->label('Name (Arabic)')
+                    ->searchable()
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('company.legal_name')
+                    ->label('Company')
+                    ->searchable()
+                    ->sortable(),
+                
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Status')
+                    ->boolean()
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('products_count')
+                    ->label('Products')
+                    ->counts('products')
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('users_count')
+                    ->label('Staff')
+                    ->counts('users')
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Created')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Updated')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+                
+                Tables\Filters\SelectFilter::make('company_id')
+                    ->relationship('company', 'legal_name')
+                    ->label('Company')
+                    ->searchable()
+                    ->preload(),
+                
+                Tables\Filters\SelectFilter::make('is_active')
+                    ->label('Status')
+                    ->options([
+                        '1' => 'Active',
+                        '0' => 'Inactive',
+                    ]),
+                
+                Tables\Filters\Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label('Created From'),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label('Created Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    }),
+            ])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    
+                    Tables\Actions\BulkAction::make('activate')
+                        ->label('Activate Selected')
+                        ->icon('heroicon-o-check')
+                        ->action(fn (array $records) => PointOfSale::whereIn('id', $records)->update(['is_active' => true]))
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion(),
+                    
+                    Tables\Actions\BulkAction::make('deactivate')
+                        ->label('Deactivate Selected')
+                        ->icon('heroicon-o-x-mark')
+                        ->action(fn (array $records) => PointOfSale::whereIn('id', $records)->update(['is_active' => false]))
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\ProductsRelationManager::class,
+            RelationManagers\UsersRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListPointOfSales::route('/'),
+            'create' => Pages\CreatePointOfSale::route('/create'),
+            'view' => Pages\ViewPointOfSale::route('/{record}'),
+            'edit' => Pages\EditPointOfSale::route('/{record}/edit'),
+        ];
+    }
+    
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
+    }
+    
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return $record->name_en;
+    }
+    
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name_en', 'name_ar', 'description_en', 'description_ar'];
+    }
+    
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Company' => $record->company->legal_name,
+            'Status' => $record->is_active ? 'Active' : 'Inactive',
+        ];
+    }
+    
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('is_active', true)->count();
+    }
+    
+    public static function getModelLabel(): string
+    {
+        return __('Point of Sale');
+    }
+    
+    public static function getPluralModelLabel(): string
+    {
+        return __('Points of Sale');
+    }
+}
