@@ -47,7 +47,6 @@ class ProductCategoryResource extends Resource
 
                         Forms\Components\RichEditor::make('description_en')
                             ->label(__('Description'))
-                            ->required()
                             ->toolbarButtons([
                                 'bold',
                                 'italic',
@@ -69,7 +68,6 @@ class ProductCategoryResource extends Resource
 
                         Forms\Components\RichEditor::make('description_ar')
                             ->label(__('Description'))
-                            ->required()
                             ->toolbarButtons([
                                 'bold',
                                 'italic',

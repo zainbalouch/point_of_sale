@@ -81,14 +81,12 @@ class ProductResource extends Resource
 
                         TextInput::make('sku')
                             ->label(__('SKU'))
-                            ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
                             ->columnSpan(1),
 
                         TextInput::make('code')
                             ->label(__('Code'))
-                            ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
                             ->columnSpan(1),
@@ -107,7 +105,6 @@ class ProductResource extends Resource
                             ->disk('public')
                             ->directory('products')
                             ->imageEditor()
-                            ->required()
                             ->maxSize(5120) // 5MB
                             ->downloadable()
                             ->openable()
