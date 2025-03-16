@@ -19,7 +19,6 @@ class TaxResource extends Resource
     protected static ?string $model = Tax::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';
-    protected static ?string $navigationGroup = 'Finance';
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -245,5 +244,10 @@ class TaxResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('Taxes');
+    }
+    
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Finance');
     }
 }
