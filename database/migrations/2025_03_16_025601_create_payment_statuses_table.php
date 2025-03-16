@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('name_ar');
             $table->string('color', 10);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         // Insert default payment statuses

@@ -21,6 +21,20 @@ class ProductCategory extends Model
         'parent_id',
     ];
 
+    protected $appends = ['name', 'description'];
+
+    public function getNameAttribute()
+    {
+        $locale = app()->getLocale();
+        return $this->{"name_$locale"};
+    }
+
+    public function getDescriptionAttribute()
+    {
+        $locale = app()->getLocale();
+        return $this->{"description_$locale"};
+    }
+
     public function parentCategory()
     {
         return $this->belongsTo(ProductCategory::class, 'parent_id');
@@ -32,6 +46,11 @@ class ProductCategory extends Model
     public function childCategories()
     {
         return $this->hasMany(ProductCategory::class, 'parent_id');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
     }
 
     public function buildBreadcrumbs($categoryId, $prefix = '', $startCategoryId = null)

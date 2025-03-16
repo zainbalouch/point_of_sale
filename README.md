@@ -1,7 +1,7 @@
 # Invoices Manager app
 
 TO DO
-Fixc required storing company_id or user_id
+Create Customer for order and invoice
 
 I'm building a SAAS Laravel app as the following:
 The list of entities is:

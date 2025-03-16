@@ -24,11 +24,16 @@ class Product extends Model
         'sale_price',
         'currency_id',
         'product_category_id',
-        'company_id',
+        'point_of_sale_id',
+        'is_active',
         'image_url',
     ];
 
-    protected $appends = ['image_url_path'];
+    protected $appends = ['image_url_path', 'name', 'description'];
+    
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function getImageUrlPathAttribute()
     {
@@ -80,5 +85,22 @@ class Product extends Model
         return LogOptions::defaults()
             ->logOnly(['*'])
             ->logOnlyDirty();
+    }
+    
+    public function pointOfSale()
+    {
+        return $this->belongsTo(PointOfSale::class);
+    }
+    
+    public function getNameAttribute()
+    {
+        $locale = app()->getLocale();
+        return $this->{"name_$locale"};
+    }
+    
+    public function getDescriptionAttribute()
+    {
+        $locale = app()->getLocale();
+        return $this->{"description_$locale"};
     }
 }

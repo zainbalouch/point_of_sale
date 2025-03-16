@@ -28,7 +28,6 @@ return new class extends Migration
             $table->unsignedBigInteger('discount_amount')->default(0);
             $table->unsignedBigInteger('subtotal');
             $table->unsignedBigInteger('total');
-            $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

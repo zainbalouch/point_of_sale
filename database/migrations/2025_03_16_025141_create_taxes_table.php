@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('taxes', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name_en');
+            $table->string('name_ar');
             $table->enum('type', ['percentage', 'fixed']);
             // Store tax as decimal instead of integer for better precision with percentages
             $table->decimal('amount', 10, 2);
