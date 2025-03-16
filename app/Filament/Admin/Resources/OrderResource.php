@@ -10,6 +10,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\DateRangeFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Currency;
@@ -27,19 +30,18 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Section::make('Order Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('number')
+                            ->label('Order Number')
+                            ->disabled(fn ($livewire) => $livewire instanceof Pages\EditOrder)
+                            ->dehydrated(fn ($livewire) => $livewire instanceof Pages\CreateOrder)
+                            ->placeholder('Will be auto-generated')
+                            ->maxLength(255),
+                    ]),
+
                 Forms\Components\Section::make('Customer Information')
                     ->schema([
-                        Forms\Components\TextInput::make('customer_name')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('customer_email')
-                            ->email()
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('customer_phone_number')
-                            ->tel()
-                            ->required()
-                            ->maxLength(20),
                         Forms\Components\Select::make('customer_id')
                             ->relationship(
                                 name: 'customer',
@@ -50,18 +52,24 @@ class OrderResource extends Resource
                             ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
                             ->searchable(['first_name', 'last_name'])
                             ->preload()
-                            ->required()
-                            ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                if ($state) {
-                                    $customer = \App\Models\User::find($state);
-                                    if ($customer) {
-                                        $set('customer_name', "{$customer->first_name} {$customer->last_name}");
-                                        $set('customer_email', $customer->email);
-                                    }
-                                }
-                            }),
+                            ->required(),
+                        Forms\Components\Select::make('user_id')
+                            ->relationship(
+                                name: 'user',
+                                modifyQueryUsing: fn (Builder $query) => $query
+                                    ->select(['id', 'first_name', 'last_name'])
+                                    ->orderBy('first_name')
+                            )
+                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
+                            ->label('Assigned Staff')
+                            ->searchable(['first_name', 'last_name'])
+                            ->preload(),
+                        Forms\Components\Select::make('company_id')
+                            ->relationship('company', 'legal_name')
+                            ->searchable()
+                            ->preload(),
                     ])
-                    ->columns(2),
+                    ->columns(3),
 
                 Forms\Components\Section::make('Order Details')
                     ->schema([
@@ -82,12 +90,12 @@ class OrderResource extends Resource
                             ->preload(),
                         Forms\Components\DateTimePicker::make('estimated_delivery_at')
                             ->required(),
-                        Forms\Components\DateTimePicker::make('delivered_at')
-                            ->nullable(),
                         Forms\Components\DateTimePicker::make('shipped_at')
                             ->nullable(),
+                        Forms\Components\DateTimePicker::make('delivered_at')
+                            ->nullable(),
                     ])
-                    ->columns(2),
+                    ->columns(3),
 
                 Forms\Components\Section::make('Financial Details')
                     ->schema([
@@ -111,8 +119,17 @@ class OrderResource extends Resource
                             ->numeric()
                             ->minValue(0)
                             ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                            ->disabled()
-                            ->dehydrated(),
+                            ->dehydrated()
+                            ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, Forms\Get $get) {
+                                if (blank($state)) {
+                                    $shipping = (float)($get('shipping_fee') ?? 0);
+                                    $subtotal = (float)($get('subtotal') ?? 0);
+                                    $tax = (float)($get('tax') ?? 0);
+                                    $component->state($shipping + $subtotal + $tax);
+                                }
+                            })
+                            ->live()
+                            ->disabled(),
                     ])
                     ->columns(2),
 
@@ -211,7 +228,7 @@ class OrderResource extends Resource
                     ->relationship('shippingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
-                            ->default(AddressType::SHIPPING),
+                            ->default(1), // Using numeric value 1 for shipping address type
                         Forms\Components\Section::make('Contact Information')
                             ->schema([
                                 Forms\Components\TextInput::make('contact_person_name')
@@ -288,7 +305,7 @@ class OrderResource extends Resource
                     ->relationship('billingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
-                            ->default(AddressType::BILLING),
+                            ->default(2), // Using numeric value 2 for billing address type
                         Forms\Components\Section::make('Contact Information')
                             ->schema([
                                 Forms\Components\TextInput::make('contact_person_name')
@@ -360,6 +377,20 @@ class OrderResource extends Resource
                     ])
                     ->columns(1)
                     ->collapsible(),
+
+                Forms\Components\Section::make('Meta Information')
+                    ->schema([
+                        Forms\Components\KeyValue::make('meta')
+                            ->label('Additional Metadata')
+                            ->keyLabel('Key')
+                            ->valueLabel('Value')
+                            ->addButtonLabel('Add Item')
+                            ->keyPlaceholder('Enter key')
+                            ->valuePlaceholder('Enter value')
+                            ->columnSpan(2),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 
@@ -370,12 +401,14 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('number')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('customer_name')
-                    ->searchable()
+                Tables\Columns\TextColumn::make('customer.first_name')
+                    ->label('Customer')
+                    ->formatStateUsing(fn ($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : 'N/A')
+                    ->searchable(['customers.first_name', 'customers.last_name'])
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status.name_en')
                     ->badge()
-                    ->color(fn (Order $record): string => match ($record->status->name_en) {
+                    ->color(fn (Order $record): string => match ($record->status->name_en ?? '') {
                         'Pending' => 'warning',
                         'Processing' => 'info',
                         'Shipped' => 'primary',
@@ -386,19 +419,55 @@ class OrderResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total')
-                    ->money(fn (Order $record): string => $record->currency->code)
+                    ->money(fn (Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
-                // Add shipping address
-                Tables\Columns\TextColumn::make('shippingAddress.street')
-                    ->label('Shipping Address')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('shippingAddress.city')
+                    ->label('Shipping City')
+                    ->formatStateUsing(fn ($record) => $record->shippingAddress ? "{$record->shippingAddress->city}, {$record->shippingAddress->country}" : 'N/A')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('shipped_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('estimated_delivery_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('order_status_id')
+                    ->relationship('status', 'name_en')
+                    ->label('Order Status')
+                    ->preload()
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('payment_method_id')
+                    ->relationship('paymentMethod', 'name_en')
+                    ->label('Payment Method')
+                    ->preload()
+                    ->searchable(),
+                Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label('Order Date From'),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label('Order Date Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -408,13 +477,14 @@ class OrderResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+            // Notes relation removed until NotesRelationManager is created
         ];
     }
 
@@ -442,6 +512,6 @@ class OrderResource extends Resource
     // Navigation group function
     public static function getNavigationGroup(): string
     {
-        return __('E-commerce');
+        return __('Sales');
     }
 }
