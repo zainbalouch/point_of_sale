@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
@@ -14,11 +14,24 @@ return new class extends Migration
         Schema::create('currencies', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('code');
+            $table->string('code')->unique();
             $table->string('symbol');
             $table->timestamps();
             $table->softDeletes();
         });
+
+        // Add index for faster retrieval
+        Schema::table('currencies', function (Blueprint $table) {
+            $table->index('code');
+        });
+
+        // Insert common currencies
+        DB::table('currencies')->insert([
+            ['name' => 'Saudi Riyal', 'code' => 'SAR', 'symbol' => 'ر.س', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'US Dollar', 'code' => 'USD', 'symbol' => '$', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Euro', 'code' => 'EUR', 'symbol' => '€', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'British Pound', 'code' => 'GBP', 'symbol' => '£', 'created_at' => now(), 'updated_at' => now()],
+        ]);
     }
 
     /**

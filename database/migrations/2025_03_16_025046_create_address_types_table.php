@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,17 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_categories', function (Blueprint $table) {
+        Schema::create('address_types', function (Blueprint $table) {
             $table->id();
             $table->string('name_en');
             $table->string('name_ar');
-            $table->text('description_en')->nullable();
-            $table->text('description_ar')->nullable();
-            $table->string('slug')->unique();
-            $table->foreignId('parent_id')->nullable()->constrained('product_categories')->onDelete('cascade');
             $table->timestamps();
-            $table->softDeletes();
         });
+
+        // Insert default address types
+        DB::table('address_types')->insert([
+            ['id' => 1, 'name_en' => 'Shipping', 'name_ar' => 'شحن', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 2, 'name_en' => 'Billing', 'name_ar' => 'فواتير', 'created_at' => now(), 'updated_at' => now()],
+        ]);
     }
 
     /**
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_categories');
+        Schema::dropIfExists('address_types');
     }
 };
