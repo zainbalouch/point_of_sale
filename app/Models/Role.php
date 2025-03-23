@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use Laratrust\Models\Role as RoleModel;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class Role extends RoleModel
+class Role
 {
     use LogsActivity;
     

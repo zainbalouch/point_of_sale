@@ -174,6 +174,24 @@ class Invoice extends Model
             ->logOnlyDirty();
     }
 
+    // Generate consecutive invoice number when creating a new invoice
+    public static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($invoice) {
+            // Get the last invoice number and extract the numeric part
+            $lastInvoice = static::orderBy('number', 'desc')->first();
+            $lastNumber = $lastInvoice ? intval(substr($lastInvoice->number, 4)) : 0;
+            
+            // Generate the next consecutive number
+            $nextNumber = $lastNumber + 1;
+            
+            // Create the new invoice number with padding
+            $invoice->number = 'INV-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        });
+    }
+
     // Helper to check if invoice is paid
     public function isPaid(): bool
     {

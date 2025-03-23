@@ -46,15 +46,16 @@ class InvoiceResource extends Resource
                             ->schema([
                                 TextInput::make('number')
                                     ->label(__('Invoice Number'))
-                                    ->required()
-                                    ->unique(ignoreRecord: true)
-                                    ->placeholder(__('INV-00001')),
+                                    ->disabled()
+                                    ->readOnly()
+                                    ->placeholder(__('Will be generated automatically'))
+                                    ->dehydrated(false),
                                     
                                 Select::make('invoice_status_id')
                                     ->label(__('Status'))
                                     ->relationship('status', 'name_' . app()->getLocale())
-                                    ->preload()
-                                    ->required(),
+                                    ->preload(),
+                                    // ->required(),
                             ])
                             ->columns(2),
                             
@@ -67,7 +68,7 @@ class InvoiceResource extends Resource
                                     
                                 DatePicker::make('due_date')
                                     ->label(__('Due Date'))
-                                    ->required()
+                                    // ->required()
                                     ->default(now()->addDays(30)),
                             ])
                             ->columns(2),

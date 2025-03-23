@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use Laratrust\Models\Permission as PermissionModel;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class Permission extends PermissionModel
+class Permission
 {
     use LogsActivity;
 
