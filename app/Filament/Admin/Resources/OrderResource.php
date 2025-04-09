@@ -10,16 +10,10 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\DateRangeFilter;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Currency;
 use App\Models\Product;
-use Filament\Forms\Components\TextInput\Mask;
-use App\Models\AddressType;
-
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
@@ -45,11 +39,11 @@ class OrderResource extends Resource
                         Forms\Components\Select::make('customer_id')
                             ->relationship(
                                 name: 'customer',
-                                modifyQueryUsing: fn (Builder $query) => $query
+                                modifyQueryUsing: fn(Builder $query) => $query
                                     ->select(['id', 'first_name', 'last_name'])
                                     ->orderBy('first_name')
                             )
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}")
                             ->searchable(['first_name', 'last_name'])
                             ->preload()
                             ->label(__('Customer'))
@@ -57,11 +51,11 @@ class OrderResource extends Resource
                         Forms\Components\Select::make('user_id')
                             ->relationship(
                                 name: 'user',
-                                modifyQueryUsing: fn (Builder $query) => $query
+                                modifyQueryUsing: fn(Builder $query) => $query
                                     ->select(['id', 'first_name', 'last_name'])
                                     ->orderBy('first_name')
                             )
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}")
                             ->label(__('Assigned Staff'))
                             ->searchable(['first_name', 'last_name'])
                             ->preload(),
@@ -111,25 +105,25 @@ class OrderResource extends Resource
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                         Forms\Components\TextInput::make('subtotal')
                             ->label(__('Subtotal'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                         Forms\Components\TextInput::make('tax')
                             ->label(__('Tax'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                         Forms\Components\TextInput::make('total')
                             ->label(__('Total'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
                             ->dehydrated()
                             ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, Forms\Get $get) {
                                 if (blank($state)) {
@@ -145,9 +139,18 @@ class OrderResource extends Resource
                     ->columns(2),
 
                 Forms\Components\Section::make(__('Order Items'))
+                    ->headerActions([
+                        Forms\Components\Actions\Action::make('add_products')
+                            ->label(__('Add Products to Inventory'))
+                            ->icon('heroicon-o-plus')
+                            ->color('primary')
+                            ->url(fn () => route('filament.admin.resources.products.create', [
+                                'return_url' => request()->fullUrl(),
+                            ])),
+                    ])
                     ->schema([
                         Forms\Components\Repeater::make('items')
-
+                            ->label(__('Items'))
                             ->relationship()
                             ->schema([
                                 Forms\Components\Select::make('product_id')
@@ -238,7 +241,7 @@ class OrderResource extends Resource
                     ->collapsible(),
 
 
-                    Forms\Components\Section::make(__('Shipping Address'))
+                Forms\Components\Section::make(__('Shipping Address'))
                     ->relationship('shippingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
@@ -414,13 +417,13 @@ class OrderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('customer.first_name')
                     ->label(__('Customer'))
-                    ->formatStateUsing(fn ($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : __('N/A'))
+                    ->formatStateUsing(fn($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : __('N/A'))
                     ->searchable(['customers.first_name', 'customers.last_name'])
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status.name_en')
                     ->label(__('Order Status'))
                     ->badge()
-                    ->color(fn (Order $record): string => match ($record->status->name_en ?? '') {
+                    ->color(fn(Order $record): string => match ($record->status->name_en ?? '') {
                         'Pending' => 'warning',
                         'Processing' => 'info',
                         'Shipped' => 'primary',
@@ -432,11 +435,11 @@ class OrderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total')
                     ->label(__('Total'))
-                    ->money(fn (Order $record): string => $record->currency?->code ?? 'USD')
+                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('shippingAddress.city')
                     ->label(__('Shipping City'))
-                    ->formatStateUsing(fn ($record) => $record->shippingAddress ? "{$record->shippingAddress->city}, {$record->shippingAddress->country}" : __('N/A'))
+                    ->formatStateUsing(fn($record) => $record->shippingAddress ? "{$record->shippingAddress->city}, {$record->shippingAddress->country}" : __('N/A'))
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('shipped_at')
@@ -477,11 +480,11 @@ class OrderResource extends Resource
                         return $query
                             ->when(
                                 $data['created_from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['created_until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
                     }),
             ])

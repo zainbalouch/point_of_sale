@@ -21,6 +21,7 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Hidden;
 
 class ProductResource extends Resource
 {
@@ -39,6 +40,10 @@ class ProductResource extends Resource
                 'lg' => 5,
             ])
             ->schema([
+                // Add hidden input to preserve return_url
+                Hidden::make('return_url')
+                    ->default(fn () => request()->query('return_url')),
+
                 Section::make(__('Product information'))
                     ->columnSpan([
                         'default' => 1,
