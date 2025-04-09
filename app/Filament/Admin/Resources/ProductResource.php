@@ -260,7 +260,7 @@ class ProductResource extends Resource
                             ->live()
                             ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get))
                             ->helperText(__('Select applicable taxes for this product'))
-                            ->columnSpanFull(),
+                            ->columns(),
 
                         TextInput::make('sale_price')
                             ->label(__('Sale price (with taxes)'))
