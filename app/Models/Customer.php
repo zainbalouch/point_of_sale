@@ -25,6 +25,8 @@ class Customer extends Model
         'last_name',
         'email',
         'phone_number',
+        'vat_number',
+        'address',
         'company_id',
         'is_active',
         'meta',

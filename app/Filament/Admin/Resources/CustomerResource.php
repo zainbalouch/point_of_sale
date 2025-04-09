@@ -44,31 +44,43 @@ class CustomerResource extends Resource
                                     ->label(__('First Name'))
                                     ->required()
                                     ->maxLength(255),
-                                    
+
                                 TextInput::make('last_name')
                                     ->label(__('Last Name'))
                                     ->required()
                                     ->maxLength(255),
                             ])
                             ->columns(2),
-                            
+
                         Forms\Components\Grid::make()
                             ->schema([
                                 TextInput::make('email')
                                     ->label(__('Email'))
                                     ->email()
-                                    ->required()
                                     ->maxLength(255)
                                     ->unique(ignoreRecord: true),
-                                    
+
                                 TextInput::make('phone_number')
                                     ->label(__('Phone Number'))
                                     ->tel()
+                                    ->required()
                                     ->maxLength(20),
                             ])
                             ->columns(2),
+
+                        Forms\Components\Grid::make()
+                            ->schema([
+                                TextInput::make('vat_number')
+                                    ->label(__('VAT Number'))
+                                    ->maxLength(255),
+
+                                TextInput::make('address')
+                                    ->label(__('Address'))
+                                    ->maxLength(1000),
+                            ])
+                            ->columns(2),
                     ]),
-                    
+
                 Section::make(__('Company & Settings'))
                     ->schema([
                         Forms\Components\Grid::make()
@@ -78,7 +90,7 @@ class CustomerResource extends Resource
                                     ->relationship('company', 'legal_name')
                                     ->searchable()
                                     ->preload(),
-                                    
+
                                 Toggle::make('is_active')
                                     ->label(__('Active Status'))
                                     ->helperText(__('Whether the customer is active'))
@@ -96,43 +108,53 @@ class CustomerResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Full Name'))
                     ->searchable(['first_name', 'last_name'])
                     ->sortable(['first_name', 'last_name']),
-                    
+
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('Email'))
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('phone_number')
                     ->label(__('Phone'))
                     ->searchable(),
-                    
+
+                Tables\Columns\TextColumn::make('vat_number')
+                    ->label(__('VAT Number'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('address')
+                    ->label(__('Address'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('company.legal_name')
                     ->label(__('Company'))
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Active'))
                     ->boolean()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->label(__('Deleted At'))
                     ->dateTime()
@@ -184,7 +206,7 @@ class CustomerResource extends Resource
             'edit' => Pages\EditCustomer::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getModelLabel(): string
     {
         return __('Customer');

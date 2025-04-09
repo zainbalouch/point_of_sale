@@ -23,7 +23,7 @@
     "Order": "طلب",
     "Order items": "عناصر الطلب",
     "Order item": "عنصر طلب",
-    "Addresses": "العنوان",
+    "Addresses": "العناوين",
     "Address": "العنوان",
     "Address types": "أنواع العنوان",
     "Address type": "نوع العنوان",
@@ -32,6 +32,23 @@
     "Finance": "المالية",
     "Taxes": "الضرائب",
     "Tax": "الضريبة",
+
+    "VAT Number": "رقم ضريبة القيمة المضافة",
+    "Active Status": "حالة النشاط",
+    "Whether the customer is active": "ما إذا كان العميل نشطًا",
+    "Personal Information": "المعلومات الشخصية",
+    "Company & Settings": "الشركة والإعدادات",
+    "First Name": "الاسم الأول",
+    "Last Name": "الاسم الأخير",
+    "Email": "البريد الإلكتروني",
+    "Phone Number": "رقم الهاتف",
+    "Phone": "الهاتف",
+    "Active": "نشط",
+    "Created At": "تاريخ الإنشاء",
+    "Updated At": "تاريخ التحديث",
+    "Deleted At": "تاريخ الحذف",
+    "ID": "المعرف",
+    "Full Name": "الاسم الكامل",
 
 
     "Name (English)": "الاسم (الإنجليزية)",
@@ -45,5 +62,5 @@
 
     "Basic information": "المعلومات الأساسية",
     "Product information": "معلومات المنتج"
-    
+
 }
