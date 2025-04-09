@@ -30,17 +30,17 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Order Information')
+                Forms\Components\Section::make(__('Order Information'))
                     ->schema([
                         Forms\Components\TextInput::make('number')
-                            ->label('Order Number')
+                            ->label(__('Order Number'))
                             ->disabled(fn ($livewire) => $livewire instanceof Pages\EditOrder)
                             ->dehydrated(fn ($livewire) => $livewire instanceof Pages\CreateOrder)
-                            ->placeholder('Will be auto-generated')
+                            ->placeholder(__('Will be auto-generated'))
                             ->maxLength(255),
                     ]),
 
-                Forms\Components\Section::make('Customer Information')
+                Forms\Components\Section::make(__('Customer Information'))
                     ->schema([
                         Forms\Components\Select::make('customer_id')
                             ->relationship(
@@ -52,6 +52,7 @@ class OrderResource extends Resource
                             ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
                             ->searchable(['first_name', 'last_name'])
                             ->preload()
+                            ->label(__('Customer'))
                             ->required(),
                         Forms\Components\Select::make('user_id')
                             ->relationship(
@@ -61,60 +62,70 @@ class OrderResource extends Resource
                                     ->orderBy('first_name')
                             )
                             ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
-                            ->label('Assigned Staff')
+                            ->label(__('Assigned Staff'))
                             ->searchable(['first_name', 'last_name'])
                             ->preload(),
                         Forms\Components\Select::make('company_id')
                             ->relationship('company', 'legal_name')
+                            ->label(__('Company'))
                             ->searchable()
                             ->preload(),
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make('Order Details')
+                Forms\Components\Section::make(__('Order Details'))
                     ->schema([
                         Forms\Components\Select::make('order_status_id')
                             ->relationship('status', 'name_en')
+                            ->label(__('Order Status'))
                             ->required()
                             ->searchable()
                             ->preload(),
                         Forms\Components\Select::make('payment_method_id')
                             ->relationship('paymentMethod', 'name_en')
+                            ->label(__('Payment Method'))
                             ->required()
                             ->searchable()
                             ->preload(),
                         Forms\Components\Select::make('currency_id')
                             ->relationship('currency', 'code')
+                            ->label(__('Currency'))
                             ->required()
                             ->searchable()
                             ->preload(),
                         Forms\Components\DateTimePicker::make('estimated_delivery_at')
-                            ->required(),
+                            ->label(__('Estimated Delivery At')),
                         Forms\Components\DateTimePicker::make('shipped_at')
+                            ->label(__('Shipped At'))
                             ->nullable(),
                         Forms\Components\DateTimePicker::make('delivered_at')
+                            ->label(__('Delivered At'))
                             ->nullable(),
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make('Financial Details')
+                Forms\Components\Section::make(__('Financial Details'))
                     ->schema([
                         Forms\Components\TextInput::make('shipping_fee')
+                            ->label(__('Shipping Fee'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
                             ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                         Forms\Components\TextInput::make('subtotal')
+                            ->label(__('Subtotal'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
                             ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                         Forms\Components\TextInput::make('tax')
+                            ->label(__('Tax'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
                             ->prefix(fn ($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                         Forms\Components\TextInput::make('total')
+                            ->label(__('Total'))
                             ->required()
                             ->numeric()
                             ->minValue(0)
@@ -133,20 +144,22 @@ class OrderResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Order Items')
+                Forms\Components\Section::make(__('Order Items'))
                     ->schema([
                         Forms\Components\Repeater::make('items')
+
                             ->relationship()
                             ->schema([
                                 Forms\Components\Select::make('product_id')
                                     ->relationship('product', 'name_en')
+                                    ->label(__('Product'))
                                     ->required()
                                     ->searchable()
                                     ->preload()
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                         if (!$state) return;
-                                        
+
                                         $product = Product::find($state);
                                         if (!$product) return;
 
@@ -162,7 +175,7 @@ class OrderResource extends Resource
                                         $set('total_price', $product->price * $quantity);
                                     }),
                                 Forms\Components\TextInput::make('quantity')
-                                    ->label('Quantity')
+                                    ->label(__('Quantity'))
                                     ->required()
                                     ->numeric()
                                     ->default(1)
@@ -174,7 +187,7 @@ class OrderResource extends Resource
                                         $set('total_price', $quantity * $unitPrice);
                                     }),
                                 Forms\Components\TextInput::make('unit_price')
-                                    ->label('Unit Price')
+                                    ->label(__('Unit Price'))
                                     ->required()
                                     ->numeric()
                                     ->minValue(0)
@@ -185,7 +198,7 @@ class OrderResource extends Resource
                                         $set('total_price', $quantity * $unitPrice);
                                     }),
                                 Forms\Components\TextInput::make('total_price')
-                                    ->label('Total Price')
+                                    ->label(__('Total Price'))
                                     ->required()
                                     ->numeric()
                                     ->minValue(0)
@@ -198,9 +211,9 @@ class OrderResource extends Resource
                                 Forms\Components\Hidden::make('product_description_en')
                                     ->required(),
                                 Forms\Components\Hidden::make('product_description_ar')
-                                    ->required(),
+                                    ->nullable(),
                                 Forms\Components\Hidden::make('product_sku')
-                                    ->required(),
+                                    ->nullable(),
                             ])
                             ->defaultItems(1)
                             ->reorderable(false)
@@ -210,10 +223,10 @@ class OrderResource extends Resource
                                 $productName = $state['product_name_en'] ?? null;
                                 $quantity = $state['quantity'] ?? 0;
                                 $totalPrice = $state['total_price'] ?? 0;
-                                
+
                                 if (!$productName) return null;
-                                
-                                return "{$productName} - {$quantity} units - \${$totalPrice}";
+
+                                return "{$productName} - {$quantity} " . __('units') . " - \${$totalPrice}";
                             })
                             ->columns([
                                 'sm' => 1,
@@ -224,21 +237,19 @@ class OrderResource extends Resource
                     ])
                     ->collapsible(),
 
-                Forms\Components\Section::make('Shipping Address')
+                Forms\Components\Section::make(__('Shipping Address'))
                     ->relationship('shippingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
                             ->default(1), // Using numeric value 1 for shipping address type
-                        Forms\Components\Section::make('Contact Information')
+                        Forms\Components\Section::make(__('Contact Information'))
                             ->schema([
                                 Forms\Components\TextInput::make('contact_person_name')
-                                    ->label('Contact Name')
-                                    ->required()
+                                    ->label(__('Contact Name'))
                                     ->maxLength(255)
-                                    ->placeholder('Enter contact person name'),
+                                    ->placeholder(__('Enter contact person name')),
                                 Forms\Components\TextInput::make('contact_person_phone')
-                                    ->label('Contact Phone')
-                                    ->required()
+                                    ->label(__('Contact Phone'))
                                     ->tel()
                                     ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
                                     ->maxLength(20)
@@ -246,76 +257,74 @@ class OrderResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Address Details')
+                        Forms\Components\Section::make(__('Address Details'))
                             ->schema([
                                 Forms\Components\TextInput::make('street')
-                                    ->label('Street Address')
-                                    ->required()
+                                    ->label(__('Street Address'))
                                     ->maxLength(255)
-                                    ->placeholder('Enter street address'),
+                                    ->placeholder(__('Enter street address')),
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('city')
-                                            ->required()
+                                            ->label(__('City'))
                                             ->maxLength(255)
-                                            ->placeholder('Enter city'),
+                                            ->placeholder(__('Enter city')),
                                         Forms\Components\TextInput::make('state')
-                                            ->required()
+                                            ->label(__('State'))
                                             ->maxLength(255)
-                                            ->placeholder('Enter state/province'),
+                                            ->placeholder(__('Enter state/province')),
                                     ]),
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('postal_code')
-                                            ->label('Postal/ZIP Code')
-                                            ->required()
+                                            ->label(__('Postal/ZIP Code'))
                                             ->maxLength(20)
-                                            ->placeholder('Enter postal code'),
+                                            ->placeholder(__('Enter postal code')),
                                         Forms\Components\TextInput::make('country')
-                                            ->required()
+                                            ->label(__('Country'))
                                             ->maxLength(255)
-                                            ->placeholder('Enter country'),
+                                            ->placeholder(__('Enter country')),
                                     ]),
                             ]),
 
-                        Forms\Components\Section::make('Additional Details')
+                        Forms\Components\Section::make(__('Additional Details'))
                             ->schema([
                                 Forms\Components\Textarea::make('details')
-                                    ->label('Additional Information')
+                                    ->label(__('Additional Information'))
                                     ->maxLength(500)
-                                    ->placeholder('Enter any additional delivery instructions or details')
+                                    ->placeholder(__('Enter any additional delivery instructions or details'))
                                     ->rows(3),
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('latitude')
+                                            ->label(__('Latitude'))
                                             ->numeric()
                                             ->rules(['numeric', 'min:-90', 'max:90'])
-                                            ->placeholder('Enter latitude'),
+                                            ->placeholder(__('Enter latitude')),
                                         Forms\Components\TextInput::make('longitude')
+                                            ->label(__('Longitude'))
                                             ->numeric()
                                             ->rules(['numeric', 'min:-180', 'max:180'])
-                                            ->placeholder('Enter longitude'),
+                                            ->placeholder(__('Enter longitude')),
                                     ]),
                             ]),
                     ])
                     ->columns(1)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Billing Address')
+                Forms\Components\Section::make(__('Billing Address'))
                     ->relationship('billingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
                             ->default(2), // Using numeric value 2 for billing address type
-                        Forms\Components\Section::make('Contact Information')
+                        Forms\Components\Section::make(__('Contact Information'))
                             ->schema([
                                 Forms\Components\TextInput::make('contact_person_name')
-                                    ->label('Contact Name')
-                                    ->required()
+                                    ->label(__('Contact Name'))
                                     ->maxLength(255)
-                                    ->placeholder('Enter contact person name'),
+                                    ->placeholder(__('Enter contact person name')),
                                 Forms\Components\TextInput::make('contact_person_phone')
-                                    ->label('Contact Phone')
-                                    ->required()
+                                    ->label(__('Contact Phone'))
                                     ->tel()
                                     ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
                                     ->maxLength(20)
@@ -323,70 +332,70 @@ class OrderResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Address Details')
+                        Forms\Components\Section::make(__('Address Details'))
                             ->schema([
                                 Forms\Components\TextInput::make('street')
-                                    ->label('Street Address')
-                                    ->required()
+                                    ->label(__('Street Address'))
                                     ->maxLength(255)
-                                    ->placeholder('Enter street address'),
+                                    ->placeholder(__('Enter street address')),
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('city')
-                                            ->required()
+                                            ->label(__('City'))
                                             ->maxLength(255)
-                                            ->placeholder('Enter city'),
+                                            ->placeholder(__('Enter city')),
                                         Forms\Components\TextInput::make('state')
-                                            ->required()
+                                            ->label(__('State'))
                                             ->maxLength(255)
-                                            ->placeholder('Enter state/province'),
+                                            ->placeholder(__('Enter state/province')),
                                     ]),
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('postal_code')
-                                            ->label('Postal/ZIP Code')
-                                            ->required()
+                                            ->label(__('Postal/ZIP Code'))
                                             ->maxLength(20)
-                                            ->placeholder('Enter postal code'),
+                                            ->placeholder(__('Enter postal code')),
                                         Forms\Components\TextInput::make('country')
-                                            ->required()
+                                            ->label(__('Country'))
                                             ->maxLength(255)
-                                            ->placeholder('Enter country'),
+                                            ->placeholder(__('Enter country')),
                                     ]),
                             ]),
 
-                        Forms\Components\Section::make('Additional Details')
+                        Forms\Components\Section::make(__('Additional Details'))
                             ->schema([
                                 Forms\Components\Textarea::make('details')
-                                    ->label('Additional Information')
+                                    ->label(__('Additional Information'))
                                     ->maxLength(500)
-                                    ->placeholder('Enter any additional billing information')
+                                    ->placeholder(__('Enter any additional billing information'))
                                     ->rows(3),
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\TextInput::make('latitude')
+                                            ->label(__('Latitude'))
                                             ->numeric()
                                             ->rules(['numeric', 'min:-90', 'max:90'])
-                                            ->placeholder('Enter latitude'),
+                                            ->placeholder(__('Enter latitude')),
                                         Forms\Components\TextInput::make('longitude')
+                                            ->label(__('Longitude'))
                                             ->numeric()
                                             ->rules(['numeric', 'min:-180', 'max:180'])
-                                            ->placeholder('Enter longitude'),
+                                            ->placeholder(__('Enter longitude')),
                                     ]),
                             ]),
                     ])
                     ->columns(1)
                     ->collapsible(),
 
-                Forms\Components\Section::make('Meta Information')
+                Forms\Components\Section::make(__('Meta Information'))
                     ->schema([
                         Forms\Components\KeyValue::make('meta')
-                            ->label('Additional Metadata')
-                            ->keyLabel('Key')
-                            ->valueLabel('Value')
-                            ->addButtonLabel('Add Item')
-                            ->keyPlaceholder('Enter key')
-                            ->valuePlaceholder('Enter value')
+                            ->label(__('Additional Metadata'))
+                            ->keyLabel(__('Key'))
+                            ->valueLabel(__('Value'))
+                            ->addButtonLabel(__('Add Item'))
+                            ->keyPlaceholder(__('Enter key'))
+                            ->valuePlaceholder(__('Enter value'))
                             ->columnSpan(2),
                     ])
                     ->collapsible()
@@ -399,14 +408,16 @@ class OrderResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('number')
+                    ->label(__('Order Number'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('customer.first_name')
-                    ->label('Customer')
-                    ->formatStateUsing(fn ($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : 'N/A')
+                    ->label(__('Customer'))
+                    ->formatStateUsing(fn ($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : __('N/A'))
                     ->searchable(['customers.first_name', 'customers.last_name'])
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status.name_en')
+                    ->label(__('Order Status'))
                     ->badge()
                     ->color(fn (Order $record): string => match ($record->status->name_en ?? '') {
                         'Pending' => 'warning',
@@ -419,22 +430,26 @@ class OrderResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total')
+                    ->label(__('Total'))
                     ->money(fn (Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('shippingAddress.city')
-                    ->label('Shipping City')
-                    ->formatStateUsing(fn ($record) => $record->shippingAddress ? "{$record->shippingAddress->city}, {$record->shippingAddress->country}" : 'N/A')
+                    ->label(__('Shipping City'))
+                    ->formatStateUsing(fn ($record) => $record->shippingAddress ? "{$record->shippingAddress->city}, {$record->shippingAddress->country}" : __('N/A'))
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('shipped_at')
+                    ->label(__('Shipped At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('estimated_delivery_at')
+                    ->label(__('Estimated Delivery At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
@@ -442,20 +457,20 @@ class OrderResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('order_status_id')
                     ->relationship('status', 'name_en')
-                    ->label('Order Status')
+                    ->label(__('Order Status'))
                     ->preload()
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('payment_method_id')
                     ->relationship('paymentMethod', 'name_en')
-                    ->label('Payment Method')
+                    ->label(__('Payment Method'))
                     ->preload()
                     ->searchable(),
                 Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label('Order Date From'),
+                            ->label(__('Order Date From')),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label('Order Date Until'),
+                            ->label(__('Order Date Until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
