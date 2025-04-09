@@ -134,7 +134,94 @@ class ProductResource extends Resource
                             )
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\Section::make(__('English Content'))
+                                    ->schema([
+                                        Forms\Components\TextInput::make('name_en')
+                                            ->label(__('Name'))
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                                if ($operation !== 'create') {
+                                                    return;
+                                                }
+                                                $set('slug', Str::slug($state));
+                                            }),
+
+                                        Forms\Components\RichEditor::make('description_en')
+                                            ->label(__('Description'))
+                                            ->toolbarButtons([
+                                                'bold',
+                                                'italic',
+                                                'bulletList',
+                                                'orderedList',
+                                                'link',
+                                            ])
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->collapsible(false)
+                                    ->columns(1),
+
+                                Forms\Components\Section::make(__('Arabic Content'))
+                                    ->schema([
+                                        Forms\Components\TextInput::make('name_ar')
+                                            ->label(__('Name'))
+                                            ->required()
+                                            ->maxLength(255),
+
+                                        Forms\Components\RichEditor::make('description_ar')
+                                            ->label(__('Description'))
+                                            ->toolbarButtons([
+                                                'bold',
+                                                'italic',
+                                                'bulletList',
+                                                'orderedList',
+                                                'link',
+                                            ])
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->collapsible()
+                                    ->columns(1),
+
+                                Forms\Components\Section::make(__('Category Structure'))
+                                    ->description(__('Define how this category fits in your product hierarchy'))
+                                    ->schema([
+                                        Forms\Components\Select::make('parent_id')
+                                            ->label(__('Parent category'))
+                                            ->relationship(
+                                                'parentCategory',
+                                                'name_' . app()->getLocale()
+                                            )
+                                            ->searchable()
+                                            ->preload()
+                                            ->nullable()
+                                            ->placeholder(__('Select Parent Category'))
+                                            ->helperText(__('Choose a parent category to create a hierarchy')),
+
+                                        Forms\Components\TextInput::make('slug')
+                                            ->label(__('URL Slug'))
+                                            ->required()
+                                            ->unique(ignoreRecord: true)
+                                            ->maxLength(255)
+                                            ->prefixIcon('heroicon-m-link')
+                                            ->helperText(__('This will be used in the URL. Use lowercase letters, numbers, and hyphens only.')),
+
+                                        Forms\Components\Select::make('company_id')
+                                            ->label(__('Company'))
+                                            ->relationship('company', 'legal_name')
+                                            ->required()
+                                            ->searchable()
+                                            ->preload()
+                                            ->default(function () {
+                                                $user = Filament::auth()->user();
+                                                return $user && $user->company_id ? $user->company_id : null;
+                                            }),
+                                    ])
+                                    ->columns(1),
+                            ])
+                            ->createOptionModalHeading(__('Create new product category')),
 
                         Select::make('currency_id')
                             ->label(__('Currency'))
