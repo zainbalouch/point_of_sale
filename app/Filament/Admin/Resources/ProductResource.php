@@ -233,7 +233,10 @@ class ProductResource extends Resource
                             ->relationship('currency', 'code')
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->default(function () {
+                                return Currency::where('code', 'SAR')->first()?->id;
+                            }),
 
                         TextInput::make('price')
                             ->label(__('Price'))
