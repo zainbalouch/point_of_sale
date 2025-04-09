@@ -168,11 +168,11 @@ class OrderResource extends Resource
                                         $set('product_description_en', $product->description_en);
                                         $set('product_description_ar', $product->description_ar);
                                         $set('product_sku', $product->sku);
-                                        $set('unit_price', $product->price);
+                                        $set('unit_price', $product->sale_price);
 
                                         // Calculate initial total price
                                         $quantity = $get('quantity') ?? 1;
-                                        $set('total_price', $product->price * $quantity);
+                                        $set('total_price', $product->sale_price * $quantity);
                                     }),
                                 Forms\Components\TextInput::make('quantity')
                                     ->label(__('Quantity'))
@@ -237,7 +237,8 @@ class OrderResource extends Resource
                     ])
                     ->collapsible(),
 
-                Forms\Components\Section::make(__('Shipping Address'))
+
+                    Forms\Components\Section::make(__('Shipping Address'))
                     ->relationship('shippingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')

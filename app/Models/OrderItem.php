@@ -31,11 +31,45 @@ class OrderItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
-        'unit_price' => 'integer',
         'tax_amount' => 'integer',
         'discount_amount' => 'integer',
-        'total_price' => 'integer',
     ];
+
+    /**
+     * Get the unit price attribute.
+     * Convert from stored integer value (cents) to decimal.
+     */
+    public function getUnitPriceAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    /**
+     * Set the unit price attribute.
+     * Convert from decimal to integer value (cents) for storage.
+     */
+    public function setUnitPriceAttribute($value)
+    {
+        $this->attributes['unit_price'] = $value * 100;
+    }
+
+    /**
+     * Get the total price attribute.
+     * Convert from stored integer value (cents) to decimal.
+     */
+    public function getTotalPriceAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    /**
+     * Set the total price attribute.
+     * Convert from decimal to integer value (cents) for storage.
+     */
+    public function setTotalPriceAttribute($value)
+    {
+        $this->attributes['total_price'] = $value * 100;
+    }
 
     /**
      * Get the order that owns the item.
