@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Facades\Filament;
 
 class TaxResource extends Resource
 {
@@ -32,13 +33,13 @@ class TaxResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Sales Tax, VAT, GST'),
-                        
+
                         Forms\Components\TextInput::make('name_ar')
                             ->label(__('Name (Arabic)'))
                             ->required()
                             ->maxLength(255)
                             ->placeholder('Arabic translation'),
-                        
+
                         Forms\Components\Select::make('type')
                             ->label(__('Tax Type'))
                             ->options([
@@ -48,7 +49,7 @@ class TaxResource extends Resource
                             ->required()
                             ->default('percentage')
                             ->reactive(),
-                        
+
                         Forms\Components\TextInput::make('amount')
                             ->label(fn (callable $get) => $get('type') === 'percentage' ? __('Percentage Rate (%)') : __('Fixed Amount'))
                             ->required()
@@ -67,8 +68,12 @@ class TaxResource extends Resource
                             ->relationship('company', 'legal_name')
                             ->required()
                             ->searchable()
-                            ->preload(),
-                        
+                            ->preload()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->company_id ? $user->company_id : null;
+                            }),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Active'))
                             ->helperText(__('Inactive taxes will not be applied to orders'))
@@ -86,47 +91,47 @@ class TaxResource extends Resource
                     ->label(__('Name (English)'))
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('name_ar')
                     ->label(__('Name (Arabic)'))
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                
+
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => $state === 'percentage' ? __('Percentage') : __('Fixed'))
                     ->color(fn (string $state): string => $state === 'percentage' ? 'primary' : 'success'),
-                
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Amount'))
                     ->formatStateUsing(function ($record): string {
                         if ($record->type === 'percentage') {
                             return number_format($record->amount, 2) . '%';
                         }
-                        
+
                         return '$' . number_format($record->amount, 2);
                     })
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('company.legal_name')
                     ->label(__('Company'))
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Active'))
                     ->boolean()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Updated'))
                     ->dateTime()
@@ -135,20 +140,20 @@ class TaxResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                
+
                 Tables\Filters\SelectFilter::make('type')
                     ->label(__('Tax Type'))
                     ->options([
                         'percentage' => __('Percentage'),
                         'fixed' => __('Fixed Amount'),
                     ]),
-                
+
                 Tables\Filters\SelectFilter::make('company_id')
                     ->relationship('company', 'legal_name')
                     ->label(__('Company'))
                     ->searchable()
                     ->preload(),
-                
+
                 Tables\Filters\SelectFilter::make('is_active')
                     ->label(__('Status'))
                     ->options([
@@ -166,14 +171,14 @@ class TaxResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    
+
                     Tables\Actions\BulkAction::make('activate')
                         ->label(__('Activate Selected'))
                         ->icon('heroicon-o-check')
                         ->action(fn (array $records) => Tax::whereIn('id', $records)->update(['is_active' => true]))
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),
-                    
+
                     Tables\Actions\BulkAction::make('deactivate')
                         ->label(__('Deactivate Selected'))
                         ->icon('heroicon-o-x-mark')
@@ -201,7 +206,7 @@ class TaxResource extends Resource
             'edit' => Pages\EditTax::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -209,43 +214,43 @@ class TaxResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
-    
+
     public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
     {
         return $record->name_en;
     }
-    
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['name_en', 'name_ar', 'type', 'amount'];
     }
-    
+
     public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
     {
         return [
             'Type' => $record->type === 'percentage' ? 'Percentage' : 'Fixed',
-            'Amount' => $record->type === 'percentage' 
-                ? number_format($record->amount, 2) . '%' 
+            'Amount' => $record->type === 'percentage'
+                ? number_format($record->amount, 2) . '%'
                 : '$' . number_format($record->amount, 2),
             'Company' => $record->company->legal_name,
         ];
     }
-    
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::where('is_active', true)->count();
     }
-    
+
     public static function getModelLabel(): string
     {
         return __('Tax');
     }
-    
+
     public static function getPluralModelLabel(): string
     {
         return __('Taxes');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Finance');
