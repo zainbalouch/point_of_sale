@@ -26,6 +26,13 @@ class Tax extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function products()
+    {
+        return $this->belongsToMany(Product::class)
+            ->withTimestamps()
+            ->withPivot('deleted_at');
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

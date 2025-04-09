@@ -98,6 +98,13 @@ class Product extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function taxes()
+    {
+        return $this->belongsToMany(Tax::class)
+            ->withTimestamps()
+            ->withPivot('deleted_at');
+    }
+
     public function getNameAttribute()
     {
         $locale = app()->getLocale();

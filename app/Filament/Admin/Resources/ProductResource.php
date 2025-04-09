@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 
 class ProductResource extends Resource
 {
@@ -82,6 +83,18 @@ class ProductResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
                             ->columnSpan(1),
+
+                        Select::make('company_id')
+                            ->label(__('Company'))
+                            ->relationship('company', 'legal_name')
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->company_id ? $user->company_id : null;
+                            })
+                            ->live(),
                     ]),
 
                 Section::make(__('Pricing & Media'))
@@ -135,25 +148,39 @@ class ProductResource extends Resource
                             ->numeric()
                             ->required()
                             ->minValue(0)
-                            ->step(0.01),
+                            ->step(0.01)
+                            ->live(debounce: 500)
+                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+
+                        CheckboxList::make('taxes')
+                            ->label(__('Taxes'))
+                            ->relationship(
+                                'taxes',
+                                fn() => app()->getLocale() === 'en' ? 'name_en' : 'name_ar'
+                            )
+                            ->options(function (Forms\Get $get) {
+                                $companyId = $get('company_id');
+                                if (!$companyId) {
+                                    return [];
+                                }
+
+                                return \App\Models\Tax::query()
+                                    ->where('company_id', $companyId)
+                                    ->where('is_active', true)
+                                    ->pluck(app()->getLocale() === 'en' ? 'name_en' : 'name_ar', 'id')
+                                    ->toArray();
+                            })
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get))
+                            ->helperText(__('Select applicable taxes for this product'))
+                            ->columnSpanFull(),
 
                         TextInput::make('sale_price')
-                            ->label(__('Sale price'))
+                            ->label(__('Sale price (with taxes)'))
                             ->numeric()
-                            ->nullable()
-                            ->minValue(0)
+                            ->disabled()
+                            ->dehydrated(true)
                             ->step(0.01),
-
-                        Forms\Components\Select::make('company_id')
-                            ->label(__('Company'))
-                            ->relationship('company', 'legal_name')
-                            ->required()
-                            ->searchable()
-                            ->preload()
-                            ->default(function () {
-                                $user = Filament::auth()->user();
-                                return $user && $user->company_id ? $user->company_id : null;
-                            }),
                     ]),
             ]);
     }
@@ -254,5 +281,34 @@ class ProductResource extends Resource
     public static function getNavigationGroup(): string
     {
         return __('Manage products');
+    }
+
+    protected static function calculateSalePrice(Forms\Set $set, Forms\Get $get): void
+    {
+        $price = floatval($get('price') ?? 0);
+        $selectedTaxIds = $get('taxes');
+
+        if (empty($selectedTaxIds) || $price <= 0) {
+            $set('sale_price', $price);
+            return;
+        }
+
+        // Get tax details from database
+        $taxes = \App\Models\Tax::whereIn('id', $selectedTaxIds)->get();
+
+        $totalTaxAmount = 0;
+        foreach ($taxes as $tax) {
+            if ($tax->type === 'percentage') {
+                // Calculate percentage of the price
+                $taxAmount = $price * ($tax->amount / 100);
+            } else {
+                // Fixed amount
+                $taxAmount = $tax->amount;
+            }
+            $totalTaxAmount += $taxAmount;
+        }
+
+        $salePrice = $price + $totalTaxAmount;
+        $set('sale_price', round($salePrice, 2));
     }
 }
