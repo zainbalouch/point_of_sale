@@ -33,14 +33,14 @@ class PointOfSaleResource extends Resource
                             ->maxLength(255)
                             ->placeholder('E.g., Main Store, Branch Office, Warehouse')
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\TextInput::make('name_ar')
                             ->label(__('Name (Arabic)'))
                             ->required()
                             ->maxLength(255)
                             ->placeholder('Arabic translation')
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\Select::make('company_id')
                             ->relationship('company', 'legal_name')
                             ->required()
@@ -61,7 +61,7 @@ class PointOfSaleResource extends Resource
                                     ->maxLength(20),
                             ])
                             ->columnSpan(['sm' => 2]),
-                        
+
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Active'))
                             ->default(true)
@@ -72,7 +72,7 @@ class PointOfSaleResource extends Resource
                             ->columnSpan(['sm' => 2]),
                     ])
                     ->columns(2),
-                
+
                 Forms\Components\Section::make('Description')
                     ->schema([
                         Forms\Components\RichEditor::make('description_en')
@@ -86,7 +86,7 @@ class PointOfSaleResource extends Resource
                                 'link',
                             ])
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\RichEditor::make('description_ar')
                             ->label(__('Description (Arabic)'))
                             ->placeholder(__('Arabic description'))
@@ -101,7 +101,7 @@ class PointOfSaleResource extends Resource
                     ])
                     ->columns(2)
                     ->collapsible(),
-                
+
                 Forms\Components\Section::make('Additional Details')
                     ->schema([
                         Forms\Components\KeyValue::make('meta')
@@ -126,38 +126,38 @@ class PointOfSaleResource extends Resource
                     ->label(__('Name (English)'))
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('name_ar')
                     ->label(__('Name (Arabic)'))
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('company.legal_name')
                     ->label(__('Company'))
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Status'))
                     ->boolean()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('products_count')
                     ->label(__('Products'))
                     ->counts('products')
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('users_count')
                     ->label(__('Staff'))
                     ->counts('users')
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Updated'))
                     ->dateTime()
@@ -166,20 +166,20 @@ class PointOfSaleResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                
+
                 Tables\Filters\SelectFilter::make('company_id')
                     ->relationship('company', 'legal_name')
                     ->label(__('Company'))
                     ->searchable()
                     ->preload(),
-                
+
                 Tables\Filters\SelectFilter::make('is_active')
                     ->label(__('Status'))
                     ->options([
                         '1' => __('Active'),
                         '0' => __('Inactive'),
                     ]),
-                
+
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
@@ -209,14 +209,14 @@ class PointOfSaleResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    
+
                     Tables\Actions\BulkAction::make('activate')
                         ->label(__('Activate Selected'))
                         ->icon('heroicon-o-check')
                         ->action(fn (array $records) => PointOfSale::whereIn('id', $records)->update(['is_active' => true]))
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),
-                    
+
                     Tables\Actions\BulkAction::make('deactivate')
                         ->label(__('Deactivate Selected'))
                         ->icon('heroicon-o-x-mark')
@@ -245,7 +245,7 @@ class PointOfSaleResource extends Resource
             'edit' => Pages\EditPointOfSale::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -253,17 +253,17 @@ class PointOfSaleResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
-    
+
     public static function getGlobalSearchResultTitle(Model $record): string
     {
         return $record->name_en;
     }
-    
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['name_en', 'name_ar', 'description_en', 'description_ar'];
     }
-    
+
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
@@ -271,12 +271,12 @@ class PointOfSaleResource extends Resource
             __('Status') => $record->is_active ? __('Active') : __('Inactive'),
         ];
     }
-    
+
     public static function getModelLabel(): string
     {
         return __('Point of Sale');
     }
-    
+
     public static function getPluralModelLabel(): string
     {
         return __('Points of Sale');
@@ -284,6 +284,6 @@ class PointOfSaleResource extends Resource
 
     public static function getNavigationGroup(): string
     {
-        return __('Inventory');
+        return __('Points of Sale');
     }
 }

@@ -17,15 +17,6 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\RestoreBulkAction;
-use Filament\Tables\Actions\ForceDeleteBulkAction;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Collection;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Illuminate\Support\Str;
 
@@ -38,7 +29,7 @@ class ProductResource extends Resource
     public static function form(Form $form): Form
     {
         $locals = LaravelLocalization::getSupportedLocales();
-        
+
         return $form
             ->columns([
                 'default' => 1,
@@ -63,10 +54,10 @@ class ProductResource extends Resource
                                     if ($operation !== 'create') {
                                         return;
                                     }
-                    
+
                                     $set("slug", Str::slug($state));
                                 }),
-                            
+
                             Textarea::make("description_{$locale}")
                                 ->label(__('Description') . " ({$properties['native']})")
                                 ->maxLength(65535)
@@ -142,7 +133,7 @@ class ProductResource extends Resource
                                 'category',
                                 'name_' . app()->getLocale()
                             )
-                            ->getOptionLabelFromRecordUsing(fn (ProductCategory $record): string => 
+                            ->getOptionLabelFromRecordUsing(fn (ProductCategory $record): string =>
                                 collect(array_reverse($record->buildBreadcrumbs($record->id)))
                                     ->pluck('name')
                                     ->join(' > ')
@@ -163,29 +154,29 @@ class ProductResource extends Resource
                     ->disk('public')
                     ->square()
                     ->size(40),
-                    
+
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('code')
                     ->label(__('Code'))
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('name_' . app()->getLocale())
                     ->label(__('Name'))
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Price'))
                     ->money(fn ($record) => $record->currency ? $record->currency->code : 'USD')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('breadcrumbs')
-                    ->label(__('Category'))  
+                    ->label(__('Category'))
                     ->state(function (Product $record): string {
                         if (!$record->category) {
                             return '';

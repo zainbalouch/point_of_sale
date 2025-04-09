@@ -123,5 +123,16 @@
     "Delivered At": "تاريخ التسليم",
     "units": "وحدات",
     "Items": "منتجات",
-    "N/A": "غير متوفر"
+    "N/A": "غير متوفر",
+
+    "Name": "الاسم",
+    "Description": "الوصف",
+    "Slug": "الرابط المختصر",
+    "SKU": "رمز المنتج",
+    "Code": "الرمز",
+    "Pricing & Media": "التسعير والوسائط",
+    "Product Image": "صورة المنتج",
+    "Sale price": "سعر البيع",
+    "Product Category": "فئة المنتج",
+    "Category": "الفئة"
 }
