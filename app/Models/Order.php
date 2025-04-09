@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -45,6 +46,30 @@ class Order extends Model
         'tax' => 'integer',
         'total' => 'integer',
     ];
+
+    /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($order) {
+            // Only generate number if it's not already set
+            if (empty($order->number)) {
+                // Generate a unique order number with prefix ORD, year, month and a random 6-character string
+                $datePrefix = now()->format('Ym');
+                $randomStr = strtoupper(Str::random(6));
+                $order->number = "ORD-{$datePrefix}-{$randomStr}";
+
+                // Ensure the generated number is unique
+                while (static::where('number', $order->number)->exists()) {
+                    $randomStr = strtoupper(Str::random(6));
+                    $order->number = "ORD-{$datePrefix}-{$randomStr}";
+                }
+            }
+        });
+    }
 
     /**
      * Get the user associated with the order.

@@ -34,8 +34,8 @@ class OrderResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('number')
                             ->label(__('Order Number'))
-                            ->disabled(fn ($livewire) => $livewire instanceof Pages\EditOrder)
-                            ->dehydrated(fn ($livewire) => $livewire instanceof Pages\CreateOrder)
+                            ->disabled()
+                            ->dehydrated(false)
                             ->placeholder(__('Will be auto-generated'))
                             ->maxLength(255),
                     ]),
