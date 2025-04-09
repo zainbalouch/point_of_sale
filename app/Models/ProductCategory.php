@@ -19,6 +19,7 @@ class ProductCategory extends Model
         'description_ar',
         'slug',
         'parent_id',
+        'company_id',
     ];
 
     protected $appends = ['name', 'description'];
@@ -75,6 +76,11 @@ class ProductCategory extends Model
         }
 
         return $breadcrumbs;
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function getActivitylogOptions(): LogOptions

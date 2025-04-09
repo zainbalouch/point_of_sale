@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Facades\Filament;
 
 class ProductCategoryResource extends Resource
 {
@@ -102,6 +103,17 @@ class ProductCategoryResource extends Resource
                             ->prefixIcon('heroicon-m-link')
                             ->helperText(__('This will be used in the URL. Use lowercase letters, numbers, and hyphens only.'))
                             ->hint(fn() => url('/categories/') . '/[slug]'),
+
+                        Forms\Components\Select::make('company_id')
+                            ->label(__('Company'))
+                            ->relationship('company', 'legal_name')
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->company_id ? $user->company_id : null;
+                            }),
                     ])
                     ->columns(1),
             ]);

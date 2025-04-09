@@ -19,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Illuminate\Support\Str;
+use Filament\Facades\Filament;
 
 class ProductResource extends Resource
 {
@@ -44,7 +45,7 @@ class ProductResource extends Resource
                         'lg' => 3,
                     ])
                     ->schema([
-                        ...collect($locals)->flatMap(fn ($properties, $locale) => [
+                        ...collect($locals)->flatMap(fn($properties, $locale) => [
                             TextInput::make("name_{$locale}")
                                 ->label(__('Name') . " ({$properties['native']})")
                                 ->required()
@@ -106,6 +107,29 @@ class ProductResource extends Resource
                             ->storeFileNamesIn('original_filename')
                             ->preserveFilenames(),
 
+                        Select::make('product_category_id')
+                            ->label(__('Product Category'))
+                            ->relationship(
+                                'category',
+                                'name_' . app()->getLocale()
+                            )
+                            ->getOptionLabelFromRecordUsing(
+                                fn(ProductCategory $record): string =>
+                                collect(array_reverse($record->buildBreadcrumbs($record->id)))
+                                    ->pluck('name')
+                                    ->join(' > ')
+                            )
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+
+                        Select::make('currency_id')
+                            ->label(__('Currency'))
+                            ->relationship('currency', 'code')
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+
                         TextInput::make('price')
                             ->label(__('Price'))
                             ->numeric()
@@ -120,27 +144,16 @@ class ProductResource extends Resource
                             ->minValue(0)
                             ->step(0.01),
 
-                        Select::make('currency_id')
-                            ->label(__('Currency'))
-                            ->relationship('currency', 'code')
+                        Forms\Components\Select::make('company_id')
+                            ->label(__('Company'))
+                            ->relationship('company', 'legal_name')
                             ->required()
                             ->searchable()
-                            ->preload(),
-
-                        Select::make('product_category_id')
-                            ->label(__('Product Category'))
-                            ->relationship(
-                                'category',
-                                'name_' . app()->getLocale()
-                            )
-                            ->getOptionLabelFromRecordUsing(fn (ProductCategory $record): string =>
-                                collect(array_reverse($record->buildBreadcrumbs($record->id)))
-                                    ->pluck('name')
-                                    ->join(' > ')
-                            )
-                            ->required()
-                            ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->company_id ? $user->company_id : null;
+                            }),
                     ]),
             ]);
     }
@@ -172,7 +185,7 @@ class ProductResource extends Resource
 
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Price'))
-                    ->money(fn ($record) => $record->currency ? $record->currency->code : 'USD')
+                    ->money(fn($record) => $record->currency ? $record->currency->code : 'USD')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('breadcrumbs')

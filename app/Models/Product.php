@@ -27,10 +27,11 @@ class Product extends Model
         'point_of_sale_id',
         'is_active',
         'image_url',
+        'company_id',
     ];
 
     protected $appends = ['image_url_path', 'name', 'description'];
-    
+
     protected $casts = [
         'is_active' => 'boolean',
     ];
@@ -40,7 +41,7 @@ class Product extends Model
         if (!$this->image_url) {
             return null;
         }
-        
+
         return asset('storage/' . $this->image_url);
     }
 
@@ -54,7 +55,7 @@ class Product extends Model
     {
         $this->attributes['price'] = $value * 100;
     }
-    
+
     public function getSalePriceAttribute($value)
     {
         return $value / 100;
@@ -64,7 +65,7 @@ class Product extends Model
     {
         $this->attributes['sale_price'] = $value * 100;
     }
-    
+
     public function getFormattedDateAttribute()
     {
         return $this->created_at->format('Y-m-d');
@@ -86,18 +87,23 @@ class Product extends Model
             ->logOnly(['*'])
             ->logOnlyDirty();
     }
-    
+
     public function pointOfSale()
     {
         return $this->belongsTo(PointOfSale::class);
     }
-    
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
     public function getNameAttribute()
     {
         $locale = app()->getLocale();
         return $this->{"name_$locale"};
     }
-    
+
     public function getDescriptionAttribute()
     {
         $locale = app()->getLocale();
