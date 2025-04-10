@@ -25,15 +25,17 @@ class OrderItem extends Model
         'unit_price',
         'tax_id',
         'note',
-        'tax_amount',
+        'vat_amount',
+        'other_taxes_amount',
         'discount_amount',
         'total_price',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
-        'discount_amount' => 'integer',
-        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'vat_amount' => 'decimal:2',
+        'other_taxes_amount' => 'decimal:2',
     ];
 
     /**

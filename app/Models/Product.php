@@ -116,4 +116,45 @@ class Product extends Model
         $locale = app()->getLocale();
         return $this->{"description_$locale"};
     }
+
+    /**
+     * Calculate VAT amount for the product
+     *
+     * @return float
+     */
+    public function getVatAmount()
+    {
+        $vatTax = $this->taxes()->where('name_en', 'VAT')->first();
+
+        if (!$vatTax) {
+            return 0;
+        }
+
+        if ($vatTax->type === 'percentage') {
+            return floatval($this->price) * (floatval($vatTax->amount) / 100);
+        }
+
+        return floatval($vatTax->amount);
+    }
+
+    /**
+     * Calculate sum of all taxes except VAT
+     *
+     * @return float
+     */
+    public function getOtherTaxesAmount()
+    {
+        $otherTaxes = $this->taxes()->where('name_en', '!=', 'VAT')->get();
+        $taxesTotal = 0;
+
+        foreach ($otherTaxes as $tax) {
+            if ($tax->type === 'percentage') {
+                $taxesTotal += floatval($this->price) * (floatval($tax->amount) / 100);
+            } else {
+                $taxesTotal += floatval($tax->amount);
+            }
+        }
+
+        return $taxesTotal;
+    }
 }

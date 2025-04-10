@@ -16,4 +16,14 @@ class ViewOrder extends ViewRecord
             Actions\EditAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        // Calculate the balance left
+        $total = floatval($data['total'] ?? 0);
+        $amountPaid = floatval($data['amount_paid'] ?? 0);
+        $data['balance_left'] = number_format($total - $amountPaid, 2, '.', '');
+
+        return $data;
+    }
 }

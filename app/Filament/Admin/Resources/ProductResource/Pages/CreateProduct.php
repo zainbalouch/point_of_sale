@@ -13,13 +13,6 @@ class CreateProduct extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        // Check request parameters, hidden inputs, and query parameters for the return_url
-        $returnUrl = $this->data['return_url'] ?? request()->input('return_url') ?? request()->query('return_url');
-
-        if ($returnUrl) {
-            return $returnUrl;
-        }
-
         return $this->getResource()::getUrl('index');
     }
 }

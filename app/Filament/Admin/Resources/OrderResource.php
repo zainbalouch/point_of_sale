@@ -52,7 +52,76 @@ class OrderResource extends Resource
                             ->searchable(['first_name', 'last_name'])
                             ->preload()
                             ->label(__('Customer'))
-                            ->required(),
+                            ->required()
+                            ->createOptionForm([
+                                Forms\Components\Section::make(__('Personal Information'))
+                                    ->schema([
+                                        Forms\Components\Grid::make()
+                                            ->schema([
+                                                Forms\Components\TextInput::make('first_name')
+                                                    ->label(__('First Name'))
+                                                    ->required()
+                                                    ->maxLength(255),
+
+                                                Forms\Components\TextInput::make('last_name')
+                                                    ->label(__('Last Name'))
+                                                    ->required()
+                                                    ->maxLength(255),
+                                            ])
+                                            ->columns(2),
+
+                                        Forms\Components\Grid::make()
+                                            ->schema([
+                                                Forms\Components\TextInput::make('email')
+                                                    ->label(__('Email'))
+                                                    ->email()
+                                                    ->maxLength(255)
+                                                    ->unique('customers', 'email'),
+
+                                                Forms\Components\TextInput::make('phone_number')
+                                                    ->label(__('Phone Number'))
+                                                    ->tel()
+                                                    ->required()
+                                                    ->maxLength(20),
+                                            ])
+                                            ->columns(2),
+
+                                        Forms\Components\Grid::make()
+                                            ->schema([
+                                                Forms\Components\TextInput::make('vat_number')
+                                                    ->label(__('VAT Number'))
+                                                    ->maxLength(255),
+
+                                                Forms\Components\TextInput::make('address')
+                                                    ->label(__('Address'))
+                                                    ->maxLength(1000),
+                                            ])
+                                            ->columns(2),
+                                    ]),
+
+                                Forms\Components\Section::make(__('Company & Settings'))
+                                    ->schema([
+                                        Forms\Components\Grid::make()
+                                            ->schema([
+                                                Forms\Components\Select::make('company_id')
+                                                    ->label(__('Company'))
+                                                    ->relationship('company', 'legal_name')
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->default(function () {
+                                                        $user = Filament::auth()->user();
+                                                        return $user && $user->company_id ? $user->company_id : null;
+                                                    }),
+
+                                                Forms\Components\Toggle::make('is_active')
+                                                    ->label(__('Active Status'))
+                                                    ->helperText(__('Whether the customer is active'))
+                                                    ->default(true),
+                                            ])
+                                            ->columns(2),
+                                    ]),
+                            ])
+                            ->createOptionModalHeading(__('Create New Customer')),
                         Forms\Components\Select::make('user_id')
                             ->relationship(
                                 name: 'user',
@@ -89,8 +158,8 @@ class OrderResource extends Resource
                 //             ->numeric()
                 //             ->minValue(0)
                 //             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                //         Forms\Components\TextInput::make('tax')
-                //             ->label(__('Tax'))
+                //         Forms\Components\TextInput::make('vat')
+                //             ->label(__('vat'))
                 //             ->numeric()
                 //             ->minValue(0)
                 //             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
@@ -104,8 +173,8 @@ class OrderResource extends Resource
                 //                 if (blank($state)) {
                 //                     $shipping = (float)($get('shipping_fee') ?? 0);
                 //                     $subtotal = (float)($get('subtotal') ?? 0);
-                //                     $tax = (float)($get('tax') ?? 0);
-                //                     $component->state($shipping + $subtotal + $tax);
+                //                     $vat = (float)($get('vat') ?? 0);
+                //                     $component->state($shipping + $subtotal + $vat);
                 //                 }
                 //             })
                 //             ->live()
@@ -119,9 +188,8 @@ class OrderResource extends Resource
                             ->label(__('Add New Products to Inventory'))
                             ->icon('heroicon-o-plus')
                             ->color('primary')
-                            ->url(fn() => route('filament.admin.resources.products.create', [
-                                'return_url' => request()->fullUrl(),
-                            ])),
+                            ->url(fn() => route('filament.admin.resources.products.create'))
+                            ->openUrlInNewTab(),
                     ])
                     ->schema([
                         Forms\Components\Grid::make()
@@ -132,10 +200,11 @@ class OrderResource extends Resource
                                             ['label' => __('Product'), 'span' => 2, 'padding' => 20],
                                             ['label' => __('Quantity'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Unit Price'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('VAT/Tax'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('VAT'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Other Taxes'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Discount'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Total Price'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Note'), 'span' => 3, 'padding' => 30],
+                                            ['label' => __('Note'), 'span' => 2, 'padding' => 20],
                                         ]
                                     ])
                                     ->columnSpanFull(),
@@ -169,7 +238,8 @@ class OrderResource extends Resource
                                                 $set('product_description_ar', null);
                                                 $set('product_sku', null);
                                                 $set('unit_price', null);
-                                                $set('tax_amount', 0);
+                                                $set('vat_amount', 0);
+                                                $set('other_taxes_amount', 0);
 
                                                 // Set new values
                                                 $set('product_name_en', $product->name_en);
@@ -179,28 +249,22 @@ class OrderResource extends Resource
                                                 $set('product_sku', $product->sku);
                                                 $set('unit_price', $product->price);
 
-                                                // Calculate taxes
-                                                $taxesTotal = 0;
-                                                if ($product->taxes->count() > 0) {
-                                                    foreach ($product->taxes as $tax) {
-                                                        if ($tax->type === 'percentage') {
-                                                            // Use floatval to ensure decimal precision
-                                                            $taxesTotal += floatval($product->price) * (floatval($tax->amount) / 100);
-                                                        } else {
-                                                            // Use floatval to ensure decimal precision
-                                                            $taxesTotal += floatval($tax->amount);
-                                                        }
-                                                    }
-                                                }
+                                                // Calculate vates
+                                                $vatAmount = $product->getVatAmount();
                                                 // Preserve decimals with exact precision
-                                                $set('tax_amount', number_format($taxesTotal, 2, '.', ''));
+                                                $set('vat_amount', number_format($vatAmount, 2, '.', ''));
+
+                                                // Calculate other taxes
+                                                $otherTaxesAmount = $product->getOtherTaxesAmount();
+                                                $set('other_taxes_amount', number_format($otherTaxesAmount, 2, '.', ''));
 
                                                 // Calculate initial total price
                                                 $quantity = floatval($get('quantity') ?? 1);
                                                 $unitPrice = floatval($product->price);
-                                                $taxAmount = floatval($taxesTotal);
+                                                $vatAmount = floatval($vatAmount);
+                                                $otherTaxesAmount = floatval($otherTaxesAmount);
                                                 $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
 
                                                 self::calculateOrderTotals($set, $get);
                                             })
@@ -216,9 +280,10 @@ class OrderResource extends Resource
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $quantity = floatval($state ?? 1);
                                                 $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $taxAmount = floatval($get('tax_amount') ?? 0);
+                                                $vatAmount = floatval($get('vat_amount') ?? 0);
+                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
                                                 $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
 
                                                 self::calculateOrderTotals($set, $get);
                                             })
@@ -233,55 +298,80 @@ class OrderResource extends Resource
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $quantity = floatval($get('quantity') ?? 1);
                                                 $unitPrice = floatval($state ?? 0);
-                                                $taxAmount = floatval($get('tax_amount') ?? 0);
+                                                $vatAmount = floatval($get('vat_amount') ?? 0);
+                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
                                                 $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
 
                                                 self::calculateOrderTotals($set, $get);
                                             })
                                             ->columnSpan(1),
-                                        Forms\Components\TextInput::make('tax_amount')
-                                            ->label(__('VAT/Tax'))
+                                        Forms\Components\TextInput::make('vat_amount')
+                                            ->label(__('VAT'))
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
-                                            ->step(0.01)
+                                            ->step(0.1)
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $quantity = floatval($get('quantity') ?? 1);
                                                 $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $taxAmount = floatval($state ?? 0);
+                                                $vatAmount = floatval($state ?? 0);
+                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
                                                 $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
 
                                                 self::calculateOrderTotals($set, $get);
                                             })
                                             ->columnSpan(1),
+
+                                        Forms\Components\TextInput::make('other_taxes_amount')
+                                            ->label(__('Other Taxes'))
+                                            ->hiddenLabel()
+                                            ->numeric()
+                                            ->dehydrated(true)
+                                            ->step(0.1)
+                                            ->default(0)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $quantity = floatval($get('quantity') ?? 1);
+                                                $unitPrice = floatval($get('unit_price') ?? 0);
+                                                $vatAmount = floatval($get('vat_amount') ?? 0);
+                                                $otherTaxesAmount = floatval($state ?? 0);
+                                                $discountAmount = floatval($get('discount_amount') ?? 0);
+                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
+
+                                                self::calculateOrderTotals($set, $get);
+                                            })
+                                            ->columnSpan(1),
+
                                         Forms\Components\TextInput::make('discount_amount')
                                             ->label(__('Discount'))
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
-                                            ->step(0.01)
+                                            ->step(0.1)
                                             ->default(0)
                                             ->minValue(0)
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $quantity = floatval($get('quantity') ?? 1);
                                                 $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $taxAmount = floatval($get('tax_amount') ?? 0);
+                                                $vatAmount = floatval($get('vat_amount') ?? 0);
+                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
                                                 $discountAmount = floatval($state ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
 
                                                 self::calculateOrderTotals($set, $get);
                                             })
                                             ->columnSpan(1),
+
                                         Forms\Components\TextInput::make('total_price')
                                             ->label(__('Total Price'))
                                             ->hiddenLabel()
                                             ->required()
                                             ->numeric()
-                                            ->step(0.01)
+                                            ->step(0.1)
                                             ->minValue(0)
                                             ->disabled()
                                             ->dehydrated()
@@ -293,7 +383,7 @@ class OrderResource extends Resource
                                             ->placeholder(__('Add a note for this item'))
                                             ->nullable()
                                             ->dehydrated(true)
-                                            ->columnSpan(3),
+                                            ->columnSpan(2),
                                     ])
                                     ->columns(10),
                                 Forms\Components\Hidden::make('product_name_en')
@@ -330,39 +420,100 @@ class OrderResource extends Resource
                                     ->content(__('Order Summary'))
                                     ->extraAttributes(['class' => 'text-xl font-bold pb-2'])
                                     ->columnSpanFull(),
-                                Forms\Components\TextInput::make('subtotal')
-                                    ->label(__('Subtotal'))
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->step(0.01)
-                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                    ->columnSpan(['md' => 3]),
-                                Forms\Components\TextInput::make('tax')
-                                    ->label(__('Tax'))
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->step(0.01)
-                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                    ->columnSpan(['md' => 3]),
-                                Forms\Components\TextInput::make('total_discount')
-                                    ->label(__('Total Discount'))
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->step(0.01)
-                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                    ->columnSpan(['md' => 3]),
-                                Forms\Components\TextInput::make('total')
-                                    ->label(__('Total'))
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->step(0.01)
-                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                    ->extraAttributes(['class' => 'text-primary-600 font-bold'])
-                                    ->columnSpan(['md' => 3]),
+
+                                // Left Column
+                                Forms\Components\Grid::make()
+                                    ->schema([
+                                        Forms\Components\Select::make('order_status_id')
+                                            ->relationship('status', 'name_en')
+                                            ->label(__('Order Status'))
+                                            ->required()
+                                            ->searchable()
+                                            ->preload()
+                                            ->default(fn() => \App\Models\OrderStatus::where('name_en', 'New')->first()?->id),
+                                        Forms\Components\Select::make('payment_method_id')
+                                            ->relationship('paymentMethod', 'name_en')
+                                            ->label(__('Payment Method'))
+                                            ->required()
+                                            ->searchable()
+                                            ->preload(),
+                                        Forms\Components\Select::make('currency_id')
+                                            ->relationship('currency', 'code')
+                                            ->label(__('Currency'))
+                                            ->required()
+                                            ->searchable()
+                                            ->preload()
+                                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
+                                        Forms\Components\TextInput::make('amount_paid')
+                                            ->label(__('Amount Paid'))
+                                            ->numeric()
+                                            ->required()
+                                            ->minValue(0)
+                                            ->step(0.1)
+                                            ->default(0)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $amountPaid = floatval($state ?? 0);
+                                                $total = floatval($get('total') ?? 0);
+                                                $balanceLeft = $total - $amountPaid;
+                                                $set('balance_left', number_format($balanceLeft, 2, '.', ''));
+                                            })
+                                            ->dehydrated(true),
+                                        Forms\Components\TextInput::make('balance_left')
+                                            ->label(__('Balance Left'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->step(0.1)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                            ->extraAttributes(['class' => 'text-danger-600 font-bold']),
+                                    ])
+                                    ->columnSpan(['md' => 6])
+                                    ->columns(1),
+
+                                // Right Column
+                                Forms\Components\Grid::make()
+                                    ->schema([
+                                        Forms\Components\TextInput::make('subtotal')
+                                            ->label(__('Subtotal'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->step(0.1)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                        Forms\Components\TextInput::make('vat')
+                                            ->label(__('Total VAT Amount'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->step(0.1)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                        Forms\Components\TextInput::make('other_taxes')
+                                            ->label(__('Total Other Taxes'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->step(0.1)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                        Forms\Components\TextInput::make('discount')
+                                            ->label(__('Total Discount'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->step(0.1)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                        Forms\Components\TextInput::make('total')
+                                            ->label(__('Total'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->step(0.1)
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                            ->extraAttributes(['class' => 'text-primary-600 font-bold']),
+                                    ])
+                                    ->columnSpan(['md' => 6])
+                                    ->columns(1),
                             ])
                             ->columns(12)
                             ->extraAttributes(['class' => 'border rounded-xl p-4 bg-gray-50 mt-4']),
@@ -371,25 +522,6 @@ class OrderResource extends Resource
 
                 Forms\Components\Section::make(__('Order Details'))
                     ->schema([
-                        Forms\Components\Select::make('order_status_id')
-                            ->relationship('status', 'name_en')
-                            ->label(__('Order Status'))
-                            ->required()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Select::make('payment_method_id')
-                            ->relationship('paymentMethod', 'name_en')
-                            ->label(__('Payment Method'))
-                            ->required()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Select::make('currency_id')
-                            ->relationship('currency', 'code')
-                            ->label(__('Currency'))
-                            ->required()
-                            ->searchable()
-                            ->preload()
-                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
                         Forms\Components\DateTimePicker::make('estimated_delivery_at')
                             ->label(__('Estimated Delivery At')),
                         Forms\Components\DateTimePicker::make('shipped_at')
@@ -399,7 +531,9 @@ class OrderResource extends Resource
                             ->label(__('Delivered At'))
                             ->nullable(),
                     ])
-                    ->columns(3),
+                    ->columns(3)
+                    ->collapsible()
+                    ->collapsed(),
 
                 Forms\Components\Section::make(__('Shipping Address'))
                     ->relationship('shippingAddress')
@@ -703,47 +837,69 @@ class OrderResource extends Resource
         // Get items from state
         $items = $get('../../items') ?? [];
         $subtotal = 0;
-        $tax = 0;
+        $vat = 0;
+        $otherTaxes = 0;
         $totalDiscount = 0;
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
             $unitPrice = floatval($item['unit_price'] ?? 0);
-            $taxAmount = floatval($item['tax_amount'] ?? 0);
+            $vatAmount = floatval($item['vat_amount'] ?? 0);
+            $otherTaxesAmount = floatval($item['other_taxes_amount'] ?? 0);
             $discountAmount = floatval($item['discount_amount'] ?? 0);
 
             $subtotal += $unitPrice * $quantity;
-            $tax += $taxAmount * $quantity;
+            $vat += $vatAmount * $quantity;
+            $otherTaxes += $otherTaxesAmount * $quantity;
             $totalDiscount += $discountAmount;
         }
 
         // Use the parent form context to set the order total values
         $set('../../subtotal', number_format($subtotal, 2, '.', ''));
-        $set('../../tax', number_format($tax, 2, '.', ''));
-        $set('../../total_discount', number_format($totalDiscount, 2, '.', ''));
-        $set('../../total', number_format($subtotal + $tax - $totalDiscount, 2, '.', ''));
+        $set('../../vat', number_format($vat, 2, '.', ''));
+        $set('../../other_taxes', number_format($otherTaxes, 2, '.', ''));
+        $set('../../discount', number_format($totalDiscount, 2, '.', ''));
+        $total = $subtotal + $vat + $otherTaxes - $totalDiscount;
+        $set('../../total', number_format($total, 2, '.', ''));
+
+        // Update balance left
+        $amountPaid = floatval($get('../../amount_paid') ?? 0);
+        $balanceLeft = $total - $amountPaid;
+        $set('../../balance_left', number_format($balanceLeft, 2, '.', ''));
     }
 
     private static function calculateOrderTotalsOnRepeaterUpdate(Forms\Set $set, Forms\Get $get)
     {
         $items = $get('items') ?? [];
         $subtotal = 0;
-        $tax = 0;
+        $vat = 0;
+        $otherTaxes = 0;
         $totalDiscount = 0;
-        Log::info('Calculating order totals. Items:', $items);
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
             $unitPrice = floatval($item['unit_price'] ?? 0);
-            $taxAmount = floatval($item['tax_amount'] ?? 0);
+            $vatAmount = floatval($item['vat_amount'] ?? 0);
+            $otherTaxesAmount = floatval($item['other_taxes_amount'] ?? 0);
             $discountAmount = floatval($item['discount_amount'] ?? 0);
 
             $subtotal += $unitPrice * $quantity;
-            $tax += $taxAmount * $quantity;
+            $vat += $vatAmount * $quantity;
+            $otherTaxes += $otherTaxesAmount * $quantity;
             $totalDiscount += $discountAmount;
         }
 
         $set('subtotal', number_format($subtotal, 2, '.', ''));
-        $set('tax', number_format($tax, 2, '.', ''));
-        $set('total_discount', number_format($totalDiscount, 2, '.', ''));
-        $set('total', number_format($subtotal + $tax - $totalDiscount, 2, '.', ''));
+        $set('vat', number_format($vat, 2, '.', ''));
+        $set('other_taxes', number_format($otherTaxes, 2, '.', ''));
+        $set('discount', number_format($totalDiscount, 2, '.', ''));
+        $set('vat', number_format($vat, 2, '.', ''));
+        $set('other_taxes', number_format($otherTaxes, 2, '.', ''));
+        $set('discount', number_format($totalDiscount, 2, '.', ''));
+        $total = $subtotal + $vat + $otherTaxes - $totalDiscount;
+        $set('total', number_format($total, 2, '.', ''));
+
+        // Update balance left
+        $amountPaid = floatval($get('amount_paid') ?? 0);
+        $balanceLeft = $total - $amountPaid;
+        $set('balance_left', number_format($balanceLeft, 2, '.', ''));
     }
 }
