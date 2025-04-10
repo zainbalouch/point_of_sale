@@ -86,7 +86,8 @@ class OrderResource extends Resource
                             ->label(__('Currency'))
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
                         Forms\Components\DateTimePicker::make('estimated_delivery_at')
                             ->label(__('Estimated Delivery At')),
                         Forms\Components\DateTimePicker::make('shipped_at')
@@ -98,45 +99,41 @@ class OrderResource extends Resource
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make(__('Financial Details'))
-                    ->schema([
-                        Forms\Components\TextInput::make('shipping_fee')
-                            ->label(__('Shipping Fee'))
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                        Forms\Components\TextInput::make('subtotal')
-                            ->label(__('Subtotal'))
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                        Forms\Components\TextInput::make('tax')
-                            ->label(__('Tax'))
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                        Forms\Components\TextInput::make('total')
-                            ->label(__('Total'))
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                            ->dehydrated()
-                            ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, Forms\Get $get) {
-                                if (blank($state)) {
-                                    $shipping = (float)($get('shipping_fee') ?? 0);
-                                    $subtotal = (float)($get('subtotal') ?? 0);
-                                    $tax = (float)($get('tax') ?? 0);
-                                    $component->state($shipping + $subtotal + $tax);
-                                }
-                            })
-                            ->live()
-                            ->disabled(),
-                    ])
-                    ->columns(2),
+                // Forms\Components\Section::make(__('Financial Details'))
+                //     ->schema([
+                //         Forms\Components\TextInput::make('shipping_fee')
+                //             ->label(__('Shipping Fee'))
+                //             ->numeric()
+                //             ->minValue(0)
+                //             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                //         Forms\Components\TextInput::make('subtotal')
+                //             ->label(__('Subtotal'))
+                //             ->numeric()
+                //             ->minValue(0)
+                //             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                //         Forms\Components\TextInput::make('tax')
+                //             ->label(__('Tax'))
+                //             ->numeric()
+                //             ->minValue(0)
+                //             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                //         Forms\Components\TextInput::make('total')
+                //             ->label(__('Total'))
+                //             ->numeric()
+                //             ->minValue(0)
+                //             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                //             ->dehydrated()
+                //             ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, Forms\Get $get) {
+                //                 if (blank($state)) {
+                //                     $shipping = (float)($get('shipping_fee') ?? 0);
+                //                     $subtotal = (float)($get('subtotal') ?? 0);
+                //                     $tax = (float)($get('tax') ?? 0);
+                //                     $component->state($shipping + $subtotal + $tax);
+                //                 }
+                //             })
+                //             ->live()
+                //             ->disabled(),
+                //     ])
+                //     ->columns(2),
 
                 Forms\Components\Section::make(__('Order Items'))
                     ->headerActions([
@@ -208,11 +205,11 @@ class OrderResource extends Resource
                                     ->disabled()
                                     ->dehydrated(),
                                 Forms\Components\Hidden::make('product_name_en')
-                                    ->required(),
+                                    ->nullable(),
                                 Forms\Components\Hidden::make('product_name_ar')
-                                    ->required(),
+                                    ->nullable(),
                                 Forms\Components\Hidden::make('product_description_en')
-                                    ->required(),
+                                    ->nullable(),
                                 Forms\Components\Hidden::make('product_description_ar')
                                     ->nullable(),
                                 Forms\Components\Hidden::make('product_sku')
