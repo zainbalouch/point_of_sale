@@ -147,5 +147,12 @@
     "Product Image": "صورة المنتج",
     "Sale price": "سعر البيع",
     "Product Category": "فئة المنتج",
-    "Category": "الفئة"
+    "Category": "الفئة",
+
+    "Note": "ملاحظة",
+    "Add a note for this item": "أضف ملاحظة لهذا العنصر",
+    "Order Summary": "ملخص الطلب",
+    "Add New Products to Inventory": "إضافة منتجات جديدة إلى المخزون",
+    "VAT/Tax": "الضريبة"
+
 }

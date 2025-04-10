@@ -14,6 +14,10 @@ use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Currency;
 use App\Models\Product;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
@@ -24,7 +28,8 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make(__('Order Information'))
+                Forms\Components\Section::make()
+                    ->label(__('Order Information'))
                     ->schema([
                         Forms\Components\TextInput::make('number')
                             ->label(__('Order Number'))
@@ -63,41 +68,14 @@ class OrderResource extends Resource
                             ->relationship('company', 'legal_name')
                             ->label(__('Company'))
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->company_id ? $user->company_id : null;
+                            }),
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make(__('Order Details'))
-                    ->schema([
-                        Forms\Components\Select::make('order_status_id')
-                            ->relationship('status', 'name_en')
-                            ->label(__('Order Status'))
-                            ->required()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Select::make('payment_method_id')
-                            ->relationship('paymentMethod', 'name_en')
-                            ->label(__('Payment Method'))
-                            ->required()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Select::make('currency_id')
-                            ->relationship('currency', 'code')
-                            ->label(__('Currency'))
-                            ->required()
-                            ->searchable()
-                            ->preload()
-                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
-                        Forms\Components\DateTimePicker::make('estimated_delivery_at')
-                            ->label(__('Estimated Delivery At')),
-                        Forms\Components\DateTimePicker::make('shipped_at')
-                            ->label(__('Shipped At'))
-                            ->nullable(),
-                        Forms\Components\DateTimePicker::make('delivered_at')
-                            ->label(__('Delivered At'))
-                            ->nullable(),
-                    ])
-                    ->columns(3),
 
                 // Forms\Components\Section::make(__('Financial Details'))
                 //     ->schema([
@@ -138,10 +116,10 @@ class OrderResource extends Resource
                 Forms\Components\Section::make(__('Order Items'))
                     ->headerActions([
                         Forms\Components\Actions\Action::make('add_products')
-                            ->label(__('Add Products to Inventory'))
+                            ->label(__('Add New Products to Inventory'))
                             ->icon('heroicon-o-plus')
                             ->color('primary')
-                            ->url(fn () => route('filament.admin.resources.products.create', [
+                            ->url(fn() => route('filament.admin.resources.products.create', [
                                 'return_url' => request()->fullUrl(),
                             ])),
                     ])
@@ -150,60 +128,149 @@ class OrderResource extends Resource
                             ->label(__('Items'))
                             ->relationship()
                             ->schema([
-                                Forms\Components\Select::make('product_id')
-                                    ->relationship('product', 'name_en')
-                                    ->label(__('Product'))
-                                    ->required()
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                        if (!$state) return;
+                                Forms\Components\Grid::make()
+                                    ->schema([
+                                        Forms\Components\Select::make('product_id')
+                                            ->relationship('product', 'name_en')
+                                            ->label(__('Product'))
+                                            ->required()
+                                            ->searchable()
+                                            ->preload()
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                if (!$state) return;
 
-                                        $product = Product::find($state);
-                                        if (!$product) return;
+                                                $product = Product::find($state);
+                                                if (!$product) return;
 
-                                        $set('product_name_en', $product->name_en);
-                                        $set('product_name_ar', $product->name_ar);
-                                        $set('product_description_en', $product->description_en);
-                                        $set('product_description_ar', $product->description_ar);
-                                        $set('product_sku', $product->sku);
-                                        $set('unit_price', $product->sale_price);
+                                                // Clear previous values first
+                                                $set('product_name_en', null);
+                                                $set('product_name_ar', null);
+                                                $set('product_description_en', null);
+                                                $set('product_description_ar', null);
+                                                $set('product_sku', null);
+                                                $set('unit_price', null);
+                                                $set('tax_amount', 0);
 
-                                        // Calculate initial total price
-                                        $quantity = $get('quantity') ?? 1;
-                                        $set('total_price', $product->sale_price * $quantity);
-                                    }),
-                                Forms\Components\TextInput::make('quantity')
-                                    ->label(__('Quantity'))
-                                    ->required()
-                                    ->numeric()
-                                    ->default(1)
-                                    ->minValue(1)
-                                    ->live()
-                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                        $quantity = (int) ($state ?? 1);
-                                        $unitPrice = (float) ($get('unit_price') ?? 0);
-                                        $set('total_price', $quantity * $unitPrice);
-                                    }),
-                                Forms\Components\TextInput::make('unit_price')
-                                    ->label(__('Unit Price'))
-                                    ->required()
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->live()
-                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                        $quantity = (int) ($get('quantity') ?? 1);
-                                        $unitPrice = (float) ($state ?? 0);
-                                        $set('total_price', $quantity * $unitPrice);
-                                    }),
-                                Forms\Components\TextInput::make('total_price')
-                                    ->label(__('Total Price'))
-                                    ->required()
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->disabled()
-                                    ->dehydrated(),
+                                                // Set new values
+                                                $set('product_name_en', $product->name_en);
+                                                $set('product_name_ar', $product->name_ar);
+                                                $set('product_description_en', $product->description_en);
+                                                $set('product_description_ar', $product->description_ar);
+                                                $set('product_sku', $product->sku);
+                                                $set('unit_price', $product->price);
+
+                                                // Calculate taxes
+                                                $taxesTotal = 0;
+                                                if ($product->taxes->count() > 0) {
+                                                    foreach ($product->taxes as $tax) {
+                                                        if ($tax->type === 'percentage') {
+                                                            // Use floatval to ensure decimal precision
+                                                            $taxesTotal += floatval($product->price) * (floatval($tax->amount) / 100);
+                                                        } else {
+                                                            // Use floatval to ensure decimal precision
+                                                            $taxesTotal += floatval($tax->amount);
+                                                        }
+                                                    }
+                                                }
+                                                // Preserve decimals with exact precision
+                                                $set('tax_amount', number_format($taxesTotal, 2, '.', ''));
+
+                                                // Calculate initial total price
+                                                $quantity = floatval($get('quantity') ?? 1);
+                                                $unitPrice = floatval($product->price);
+                                                $taxAmount = floatval($taxesTotal);
+                                                $discountAmount = floatval($get('discount_amount') ?? 0);
+                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+
+                                                self::calculateOrderTotals($set, $get);
+                                            })
+                                            ->columnSpan(2),
+                                        Forms\Components\TextInput::make('quantity')
+                                            ->label(__('Quantity'))
+                                            ->required()
+                                            ->numeric()
+                                            ->default(1)
+                                            ->minValue(1)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $quantity = floatval($state ?? 1);
+                                                $unitPrice = floatval($get('unit_price') ?? 0);
+                                                $taxAmount = floatval($get('tax_amount') ?? 0);
+                                                $discountAmount = floatval($get('discount_amount') ?? 0);
+                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+
+                                                self::calculateOrderTotals($set, $get);
+                                            })
+                                            ->columnSpan(1),
+                                        Forms\Components\TextInput::make('unit_price')
+                                            ->label(__('Unit Price'))
+                                            ->required()
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $quantity = floatval($get('quantity') ?? 1);
+                                                $unitPrice = floatval($state ?? 0);
+                                                $taxAmount = floatval($get('tax_amount') ?? 0);
+                                                $discountAmount = floatval($get('discount_amount') ?? 0);
+                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+
+                                                self::calculateOrderTotals($set, $get);
+                                            })
+                                            ->columnSpan(1),
+                                        Forms\Components\TextInput::make('tax_amount')
+                                            ->label(__('VAT/Tax'))
+                                            ->numeric()
+                                            ->dehydrated(true)
+                                            ->step(0.01)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $quantity = floatval($get('quantity') ?? 1);
+                                                $unitPrice = floatval($get('unit_price') ?? 0);
+                                                $taxAmount = floatval($state ?? 0);
+                                                $discountAmount = floatval($get('discount_amount') ?? 0);
+                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+
+                                                self::calculateOrderTotals($set, $get);
+                                            })
+                                            ->columnSpan(1),
+                                        Forms\Components\TextInput::make('discount_amount')
+                                            ->label(__('Discount'))
+                                            ->numeric()
+                                            ->dehydrated(true)
+                                            ->step(0.01)
+                                            ->default(0)
+                                            ->minValue(0)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                $quantity = floatval($get('quantity') ?? 1);
+                                                $unitPrice = floatval($get('unit_price') ?? 0);
+                                                $taxAmount = floatval($get('tax_amount') ?? 0);
+                                                $discountAmount = floatval($state ?? 0);
+                                                $set('total_price', number_format((($unitPrice + $taxAmount) * $quantity) - $discountAmount, 2, '.', ''));
+
+                                                self::calculateOrderTotals($set, $get);
+                                            })
+                                            ->columnSpan(1),
+                                        Forms\Components\TextInput::make('total_price')
+                                            ->label(__('Total Price'))
+                                            ->required()
+                                            ->numeric()
+                                            ->step(0.01)
+                                            ->minValue(0)
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->columnSpan(1),
+                                        Forms\Components\Textarea::make('note')
+                                            ->rows(1)
+                                            ->label(__('Note'))
+                                            ->placeholder(__('Add a note for this item'))
+                                            ->nullable()
+                                            ->dehydrated(true)
+                                            ->columnSpan(3),
+                                    ])
+                                    ->columns(10),
                                 Forms\Components\Hidden::make('product_name_en')
                                     ->nullable(),
                                 Forms\Components\Hidden::make('product_name_ar')
@@ -218,25 +285,96 @@ class OrderResource extends Resource
                             ->defaultItems(1)
                             ->reorderable(false)
                             ->cloneable()
-                            ->collapsible()
                             ->itemLabel(function (array $state): ?string {
                                 $productName = $state['product_name_en'] ?? null;
                                 $quantity = $state['quantity'] ?? 0;
                                 $totalPrice = $state['total_price'] ?? 0;
-
                                 if (!$productName) return null;
 
-                                return "{$productName} - {$quantity} " . __('units') . " - \${$totalPrice}";
+                                return "{$productName}: {$quantity} " . __('units') . " | " . __('Total amount') . ": {$totalPrice}";
                             })
-                            ->columns([
-                                'sm' => 1,
-                                'md' => 2,
-                                'lg' => 3,
-                                'xl' => 4,
-                            ]),
+                            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                self::calculateOrderTotalsOnRepeaterUpdate($set, $get);
+                            })
+                            ->live(onBlur: true),
+
+                        Forms\Components\Grid::make()
+                            ->schema([
+                                Forms\Components\Placeholder::make('summary_heading')
+                                    ->label('')
+                                    ->content(__('Order Summary'))
+                                    ->extraAttributes(['class' => 'text-xl font-bold pb-2'])
+                                    ->columnSpanFull(),
+                                Forms\Components\TextInput::make('subtotal')
+                                    ->label(__('Subtotal'))
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->step(0.01)
+                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                    ->columnSpan(['md' => 3]),
+                                Forms\Components\TextInput::make('tax')
+                                    ->label(__('Tax'))
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->step(0.01)
+                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                    ->columnSpan(['md' => 3]),
+                                Forms\Components\TextInput::make('total_discount')
+                                    ->label(__('Total Discount'))
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->step(0.01)
+                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                    ->columnSpan(['md' => 3]),
+                                Forms\Components\TextInput::make('total')
+                                    ->label(__('Total'))
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->step(0.01)
+                                    ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                    ->extraAttributes(['class' => 'text-primary-600 font-bold'])
+                                    ->columnSpan(['md' => 3]),
+                            ])
+                            ->columns(12)
+                            ->extraAttributes(['class' => 'border rounded-xl p-4 bg-gray-50 mt-4']),
                     ])
                     ->collapsible(),
 
+                Forms\Components\Section::make(__('Order Details'))
+                    ->schema([
+                        Forms\Components\Select::make('order_status_id')
+                            ->relationship('status', 'name_en')
+                            ->label(__('Order Status'))
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\Select::make('payment_method_id')
+                            ->relationship('paymentMethod', 'name_en')
+                            ->label(__('Payment Method'))
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\Select::make('currency_id')
+                            ->relationship('currency', 'code')
+                            ->label(__('Currency'))
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
+                        Forms\Components\DateTimePicker::make('estimated_delivery_at')
+                            ->label(__('Estimated Delivery At')),
+                        Forms\Components\DateTimePicker::make('shipped_at')
+                            ->label(__('Shipped At'))
+                            ->nullable(),
+                        Forms\Components\DateTimePicker::make('delivered_at')
+                            ->label(__('Delivered At'))
+                            ->nullable(),
+                    ])
+                    ->columns(3),
 
                 Forms\Components\Section::make(__('Shipping Address'))
                     ->relationship('shippingAddress')
@@ -311,7 +449,9 @@ class OrderResource extends Resource
                             ]),
                     ])
                     ->columns(1)
-                    ->collapsible(),
+                    ->collapsible()
+                    ->collapsed(),
+
 
                 Forms\Components\Section::make(__('Billing Address'))
                     ->relationship('billingAddress')
@@ -386,7 +526,9 @@ class OrderResource extends Resource
                             ]),
                     ])
                     ->columns(1)
-                    ->collapsible(),
+                    ->collapsible()
+                    ->collapsed(),
+
 
                 Forms\Components\Section::make(__('Meta Information'))
                     ->schema([
@@ -529,5 +671,55 @@ class OrderResource extends Resource
     public static function getNavigationGroup(): string
     {
         return __('Sales');
+    }
+
+    private static function calculateOrderTotals(Forms\Set $set, Forms\Get $get)
+    {
+        // Get items from state
+        $items = $get('../../items') ?? [];
+        $subtotal = 0;
+        $tax = 0;
+        $totalDiscount = 0;
+        Log::info('Calculating order totals. Items:', $items);
+        foreach ($items as $item) {
+            $quantity = floatval($item['quantity'] ?? 1);
+            $unitPrice = floatval($item['unit_price'] ?? 0);
+            $taxAmount = floatval($item['tax_amount'] ?? 0);
+            $discountAmount = floatval($item['discount_amount'] ?? 0);
+
+            $subtotal += $unitPrice * $quantity;
+            $tax += $taxAmount * $quantity;
+            $totalDiscount += $discountAmount;
+        }
+
+        // Use the parent form context to set the order total values
+        $set('../../subtotal', number_format($subtotal, 2, '.', ''));
+        $set('../../tax', number_format($tax, 2, '.', ''));
+        $set('../../total_discount', number_format($totalDiscount, 2, '.', ''));
+        $set('../../total', number_format($subtotal + $tax - $totalDiscount, 2, '.', ''));
+    }
+
+    private static function calculateOrderTotalsOnRepeaterUpdate(Forms\Set $set, Forms\Get $get)
+    {
+        $items = $get('items') ?? [];
+        $subtotal = 0;
+        $tax = 0;
+        $totalDiscount = 0;
+        Log::info('Calculating order totals. Items:', $items);
+        foreach ($items as $item) {
+            $quantity = floatval($item['quantity'] ?? 1);
+            $unitPrice = floatval($item['unit_price'] ?? 0);
+            $taxAmount = floatval($item['tax_amount'] ?? 0);
+            $discountAmount = floatval($item['discount_amount'] ?? 0);
+
+            $subtotal += $unitPrice * $quantity;
+            $tax += $taxAmount * $quantity;
+            $totalDiscount += $discountAmount;
+        }
+
+        $set('subtotal', number_format($subtotal, 2, '.', ''));
+        $set('tax', number_format($tax, 2, '.', ''));
+        $set('total_discount', number_format($totalDiscount, 2, '.', ''));
+        $set('total', number_format($subtotal + $tax - $totalDiscount, 2, '.', ''));
     }
 }
