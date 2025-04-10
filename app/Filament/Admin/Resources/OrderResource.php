@@ -285,7 +285,7 @@ class OrderResource extends Resource
                                                             ->minValue(0)
                                                             ->step(0.01)
                                                             ->live()
-                                                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+                                                            ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
 
                                                         Forms\Components\Select::make('company_id')
                                                             ->label(__('Company'))
@@ -318,7 +318,7 @@ class OrderResource extends Resource
                                                             })
                                                             ->columns(2)
                                                             ->live()
-                                                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+                                                            ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
 
                                                         Forms\Components\TextInput::make('sale_price')
                                                             ->label(__('Sale price (with taxes)'))
@@ -814,14 +814,36 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('number')
-                    ->label(__('Order Number'))
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('customer.first_name')
                     ->label(__('Customer'))
                     ->formatStateUsing(fn($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : __('N/A'))
                     ->searchable(['customers.first_name', 'customers.last_name'])
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('paymentMethod.name_en')
+                    ->label(__('Payment Method'))
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vat')
+                    ->label(__('VAT'))
+                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('other_taxes')
+                    ->label(__('Other Taxes'))
+                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('discount')
+                    ->label(__('Discount'))
+                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('total')
+                    ->label(__('Total'))
+                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('amount_paid')
+                    ->label(__('Amount Paid'))
+                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status.name_en')
                     ->label(__('Order Status'))
@@ -836,25 +858,6 @@ class OrderResource extends Resource
                     })
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('total')
-                    ->label(__('Total'))
-                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('shippingAddress.city')
-                    ->label(__('Shipping City'))
-                    ->formatStateUsing(fn($record) => $record->shippingAddress ? "{$record->shippingAddress->city}, {$record->shippingAddress->country}" : __('N/A'))
-                    ->sortable()
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('shipped_at')
-                    ->label(__('Shipped At'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('estimated_delivery_at')
-                    ->label(__('Estimated Delivery At'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime()
@@ -892,9 +895,12 @@ class OrderResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label(__('View')),
+                Tables\Actions\EditAction::make()
+                    ->label(__('Edit')),
             ])
+            ->actionsColumnLabel(__('Actions'))
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

@@ -153,6 +153,23 @@
     "Add a note for this item": "أضف ملاحظة لهذا العنصر",
     "Order Summary": "ملخص الطلب",
     "Add New Products to Inventory": "إضافة منتجات جديدة إلى المخزون",
-    "VAT/Tax": "الضريبة"
+    "VAT/Tax": "الضريبة",
 
+    "VAT": "ضريبة القيمة المضافة",
+    "Other Taxes": "ضرائب أخرى",
+    "Discount": "خصم",
+    "Create New Customer": "إنشاء عميل جديد",
+    "Total VAT Amount": "إجمالي ضريبة القيمة المضافة",
+    "Total Other Taxes": "إجمالي الضرائب الأخرى",
+    "Total Discount": "إجمالي الخصم",
+    "Amount Paid": "المبلغ المدفوع",
+    "Balance Left": "الرصيد المتبقي",
+    "Create New Product": "إنشاء منتج جديد",
+
+    "Actions": "إجراءات",
+    "Edit": "تعديل",
+    "View": "عرض",
+
+    "Applicable Taxes": "الضرائب المطبقة",
+    "Sale Price": "سعر البيع"
 }

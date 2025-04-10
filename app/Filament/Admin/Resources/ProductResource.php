@@ -241,7 +241,7 @@ class ProductResource extends Resource
                             ->minValue(0)
                             ->step(0.01)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+                            ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
 
                         CheckboxList::make('taxes')
                             ->label(__('Taxes'))
@@ -262,7 +262,7 @@ class ProductResource extends Resource
                                     ->toArray();
                             })
                             ->live()
-                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get))
+                            ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get))
                             ->helperText(__('Select applicable taxes for this product'))
                             ->columns(),
 
@@ -301,11 +301,6 @@ class ProductResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('price')
-                    ->label(__('Price'))
-                    ->money(fn($record) => $record->currency ? $record->currency->code : 'USD')
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('breadcrumbs')
                     ->label(__('Category'))
                     ->state(function (Product $record): string {
@@ -319,6 +314,25 @@ class ProductResource extends Resource
                     })
                     ->searchable(false)
                     ->wrap(),
+
+                Tables\Columns\TextColumn::make('price')
+                    ->label(__('Unit Price'))
+                    ->money(fn($record) => $record->currency ? $record->currency->code : 'USD')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('taxes_list')
+                    ->label(__('Applicable Taxes'))
+                    ->state(function (Product $record): string {
+                        if ($record->taxes->isEmpty()) {
+                            return '-';
+                        }
+                        return $record->taxes->pluck(app()->getLocale() === 'en' ? 'name_en' : 'name_ar')->join(', ');
+                    }),
+
+                Tables\Columns\TextColumn::make('sale_price')
+                    ->label(__('Sale Price'))
+                    ->money(fn($record) => $record->currency ? $record->currency->code : 'USD')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -333,6 +347,7 @@ class ProductResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
+            ->actionsColumnLabel(__('Actions'))
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
