@@ -124,8 +124,26 @@ class OrderResource extends Resource
                             ])),
                     ])
                     ->schema([
+                        Forms\Components\Grid::make()
+                            ->schema([
+                                Forms\Components\View::make('filament.components.item-headers')
+                                    ->viewData([
+                                        'headers' => [
+                                            ['label' => __('Product'), 'span' => 2, 'padding' => 20],
+                                            ['label' => __('Quantity'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Unit Price'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('VAT/Tax'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Discount'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Total Price'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Note'), 'span' => 3, 'padding' => 30],
+                                        ]
+                                    ])
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(10),
                         Forms\Components\Repeater::make('items')
                             ->label(__('Items'))
+                            ->hiddenLabel()
                             ->relationship()
                             ->schema([
                                 Forms\Components\Grid::make()
@@ -133,6 +151,7 @@ class OrderResource extends Resource
                                         Forms\Components\Select::make('product_id')
                                             ->relationship('product', 'name_en')
                                             ->label(__('Product'))
+                                            ->hiddenLabel()
                                             ->required()
                                             ->searchable()
                                             ->preload()
@@ -188,6 +207,7 @@ class OrderResource extends Resource
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('quantity')
                                             ->label(__('Quantity'))
+                                            ->hiddenLabel()
                                             ->required()
                                             ->numeric()
                                             ->default(1)
@@ -205,6 +225,7 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
                                         Forms\Components\TextInput::make('unit_price')
                                             ->label(__('Unit Price'))
+                                            ->hiddenLabel()
                                             ->required()
                                             ->numeric()
                                             ->minValue(0)
@@ -221,6 +242,7 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
                                         Forms\Components\TextInput::make('tax_amount')
                                             ->label(__('VAT/Tax'))
+                                            ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
                                             ->step(0.01)
@@ -237,6 +259,7 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
                                         Forms\Components\TextInput::make('discount_amount')
                                             ->label(__('Discount'))
+                                            ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
                                             ->step(0.01)
@@ -255,6 +278,7 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
                                         Forms\Components\TextInput::make('total_price')
                                             ->label(__('Total Price'))
+                                            ->hiddenLabel()
                                             ->required()
                                             ->numeric()
                                             ->step(0.01)
@@ -265,6 +289,7 @@ class OrderResource extends Resource
                                         Forms\Components\Textarea::make('note')
                                             ->rows(1)
                                             ->label(__('Note'))
+                                            ->hiddenLabel()
                                             ->placeholder(__('Add a note for this item'))
                                             ->nullable()
                                             ->dehydrated(true)
@@ -680,7 +705,6 @@ class OrderResource extends Resource
         $subtotal = 0;
         $tax = 0;
         $totalDiscount = 0;
-        Log::info('Calculating order totals. Items:', $items);
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
             $unitPrice = floatval($item['unit_price'] ?? 0);
