@@ -183,14 +183,6 @@ class OrderResource extends Resource
                 //     ->columns(2),
 
                 Forms\Components\Section::make(__('Order Items'))
-                    ->headerActions([
-                        Forms\Components\Actions\Action::make('add_products')
-                            ->label(__('Add New Products to Inventory'))
-                            ->icon('heroicon-o-plus')
-                            ->color('primary')
-                            ->url(fn() => route('filament.admin.resources.products.create'))
-                            ->openUrlInNewTab(),
-                    ])
                     ->schema([
                         Forms\Components\Grid::make()
                             ->schema([
@@ -225,6 +217,119 @@ class OrderResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->live()
+                                            ->createOptionForm([
+                                                Forms\Components\Section::make(__('Product information'))
+                                                    ->schema([
+                                                        Forms\Components\TextInput::make('name_en')
+                                                            ->label(__('Name (English)'))
+                                                            ->required()
+                                                            ->maxLength(255)
+                                                            ->live(onBlur: true)
+                                                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                                                if ($operation !== 'create') {
+                                                                    return;
+                                                                }
+
+                                                                $set('slug', Str::slug($state));
+                                                            }),
+
+                                                        Forms\Components\TextInput::make('name_ar')
+                                                            ->label(__('Name (Arabic)'))
+                                                            ->maxLength(255),
+
+                                                        Forms\Components\Textarea::make('description_en')
+                                                            ->label(__('Description (English)'))
+                                                            ->maxLength(65535)
+                                                            ->nullable(),
+
+                                                        Forms\Components\Textarea::make('description_ar')
+                                                            ->label(__('Description (Arabic)'))
+                                                            ->maxLength(65535)
+                                                            ->nullable(),
+
+                                                        Forms\Components\TextInput::make('slug')
+                                                            ->label(__('Slug'))
+                                                            ->required()
+                                                            ->unique('products', 'slug')
+                                                            ->maxLength(255),
+
+                                                        Forms\Components\TextInput::make('sku')
+                                                            ->label(__('SKU'))
+                                                            ->unique('products', 'sku')
+                                                            ->maxLength(255),
+
+                                                        Forms\Components\TextInput::make('code')
+                                                            ->label(__('Code'))
+                                                            ->unique('products', 'code')
+                                                            ->maxLength(255),
+
+                                                        Forms\Components\Select::make('product_category_id')
+                                                            ->label(__('Product Category'))
+                                                            ->relationship('category', 'name_' . app()->getLocale())
+                                                            ->required()
+                                                            ->searchable()
+                                                            ->preload(),
+
+                                                        Forms\Components\Select::make('currency_id')
+                                                            ->label(__('Currency'))
+                                                            ->relationship('currency', 'code')
+                                                            ->required()
+                                                            ->searchable()
+                                                            ->preload()
+                                                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
+
+                                                        Forms\Components\TextInput::make('price')
+                                                            ->label(__('Price'))
+                                                            ->numeric()
+                                                            ->required()
+                                                            ->minValue(0)
+                                                            ->step(0.01)
+                                                            ->live()
+                                                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+
+                                                        Forms\Components\Select::make('company_id')
+                                                            ->label(__('Company'))
+                                                            ->relationship('company', 'legal_name')
+                                                            ->required()
+                                                            ->searchable()
+                                                            ->preload()
+                                                            ->default(function () {
+                                                                $user = Filament::auth()->user();
+                                                                return $user && $user->company_id ? $user->company_id : null;
+                                                            }),
+
+                                                        Forms\Components\CheckboxList::make('taxes')
+                                                            ->label(__('Taxes'))
+                                                            ->relationship(
+                                                                'taxes',
+                                                                fn() => app()->getLocale() === 'en' ? 'name_en' : 'name_ar'
+                                                            )
+                                                            ->options(function () {
+                                                                $companyId = Filament::auth()->user()->company_id;
+                                                                if (!$companyId) {
+                                                                    return [];
+                                                                }
+
+                                                                return \App\Models\Tax::query()
+                                                                    ->where('company_id', $companyId)
+                                                                    ->where('is_active', true)
+                                                                    ->pluck(app()->getLocale() === 'en' ? 'name_en' : 'name_ar', 'id')
+                                                                    ->toArray();
+                                                            })
+                                                            ->columns(2)
+                                                            ->live()
+                                                            ->afterStateUpdated(fn (Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+
+                                                        Forms\Components\TextInput::make('sale_price')
+                                                            ->label(__('Sale price (with taxes)'))
+                                                            ->numeric()
+                                                            ->disabled()
+                                                            ->dehydrated(true)
+                                                            ->step(0.01),
+                                                    ])
+                                                    ->columns(2),
+                                            ])
+                                            ->createOptionModalHeading(__('Create New Product'))
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 if (!$state) return;
 
@@ -901,5 +1006,34 @@ class OrderResource extends Resource
         $amountPaid = floatval($get('amount_paid') ?? 0);
         $balanceLeft = $total - $amountPaid;
         $set('balance_left', number_format($balanceLeft, 2, '.', ''));
+    }
+
+    private static function calculateSalePrice(Forms\Set $set, Forms\Get $get): void
+    {
+        $price = floatval($get('price') ?? 0);
+        $selectedTaxIds = $get('taxes');
+
+        if (empty($selectedTaxIds) || $price <= 0) {
+            $set('sale_price', $price);
+            return;
+        }
+
+        // Get tax details from database
+        $taxes = \App\Models\Tax::whereIn('id', $selectedTaxIds)->get();
+
+        $totalTaxAmount = 0;
+        foreach ($taxes as $tax) {
+            if ($tax->type === 'percentage') {
+                // Calculate percentage of the price
+                $taxAmount = $price * ($tax->amount / 100);
+            } else {
+                // Fixed amount
+                $taxAmount = $tax->amount;
+            }
+            $totalTaxAmount += $taxAmount;
+        }
+
+        $salePrice = $price + $totalTaxAmount;
+        $set('sale_price', round($salePrice, 2));
     }
 }
