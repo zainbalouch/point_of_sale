@@ -12,7 +12,7 @@
 
                 setTimeout(function() {
                     document.body.removeChild(iframe);
-                }, 1000);
+                }, 2000);
             };
         }
     </script>

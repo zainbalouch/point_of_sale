@@ -50,7 +50,7 @@ class InvoiceResource extends Resource
                                     ->readOnly()
                                     ->placeholder(__('Will be generated automatically'))
                                     ->dehydrated(false),
-                                    
+
                                 Select::make('invoice_status_id')
                                     ->label(__('Status'))
                                     ->relationship('status', 'name_' . app()->getLocale())
@@ -58,14 +58,14 @@ class InvoiceResource extends Resource
                                     // ->required(),
                             ])
                             ->columns(2),
-                            
+
                         Grid::make()
                             ->schema([
                                 DatePicker::make('issue_date')
                                     ->label(__('Issue Date'))
                                     ->required()
                                     ->default(now()),
-                                    
+
                                 DatePicker::make('due_date')
                                     ->label(__('Due Date'))
                                     // ->required()
@@ -73,7 +73,7 @@ class InvoiceResource extends Resource
                             ])
                             ->columns(2),
                     ]),
-                    
+
                 Section::make(__('Customer & Billing'))
                     ->schema([
                         Grid::make()
@@ -88,7 +88,7 @@ class InvoiceResource extends Resource
                                     ->searchable(['first_name', 'last_name', 'email'])
                                     ->preload()
                                     ->required(),
-                                    
+
                                 Select::make('company_id')
                                     ->label(__('Company'))
                                     ->relationship('company', 'legal_name')
@@ -105,7 +105,7 @@ class InvoiceResource extends Resource
                                     ->relationship('billingAddress', 'street')
                                     ->searchable()
                                     ->preload(),
-                                    
+
                                 Select::make('shipping_address_id')
                                     ->label(__('Shipping Address'))
                                     ->relationship('shippingAddress', 'street')
@@ -114,7 +114,7 @@ class InvoiceResource extends Resource
                             ])
                             ->columns(2),
                     ]),
-                    
+
                 Section::make(__('Financial Details'))
                     ->schema([
                         Grid::make()
@@ -124,14 +124,14 @@ class InvoiceResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->prefix('$'),
-                                    
+
                                 TextInput::make('tax_amount')
                                     ->label(__('Tax Amount'))
                                     ->numeric()
                                     ->prefix('$'),
                             ])
                             ->columns(2),
-                            
+
                         Grid::make()
                             ->schema([
                                 TextInput::make('discount_amount')
@@ -139,7 +139,7 @@ class InvoiceResource extends Resource
                                     ->numeric()
                                     ->prefix('$')
                                     ->default(0),
-                                    
+
                                 TextInput::make('total_amount')
                                     ->label(__('Total Amount'))
                                     ->required()
@@ -147,7 +147,7 @@ class InvoiceResource extends Resource
                                     ->prefix('$'),
                             ])
                             ->columns(2),
-                            
+
                         Textarea::make('meta.notes')
                             ->label(__('Notes'))
                             ->rows(3)
@@ -164,23 +164,23 @@ class InvoiceResource extends Resource
                     ->label(__('Invoice #'))
                     ->searchable()
                     ->sortable(),
-                    
+
                 TextColumn::make('customer.first_name')
                     ->label(__('Customer'))
                     ->formatStateUsing(fn ($record) => $record->customer ? "{$record->customer->first_name} {$record->customer->last_name}" : '')
                     ->searchable(['customer.first_name', 'customer.last_name'])
                     ->sortable(['customer.first_name']),
-                    
+
                 TextColumn::make('issue_date')
                     ->label(__('Issue Date'))
                     ->date()
                     ->sortable(),
-                    
+
                 TextColumn::make('due_date')
                     ->label(__('Due Date'))
                     ->date()
                     ->sortable(),
-                    
+
                 TextColumn::make('status.name_' . app()->getLocale())
                     ->label(__('Status'))
                     ->formatStateUsing(function ($state, $record) {
@@ -191,7 +191,7 @@ class InvoiceResource extends Resource
                         if (!$state) {
                             return $record->isPaid() ? 'success' : ($record->isOverdue() ? 'danger' : 'secondary');
                         }
-                        
+
                         return match (strtolower($state)) {
                             'draft' => 'secondary',
                             'sent' => 'primary',
@@ -203,18 +203,18 @@ class InvoiceResource extends Resource
                     })
                     ->searchable()
                     ->sortable(),
-                    
+
                 TextColumn::make('total_amount')
                     ->label(__('Total'))
                     ->money('USD')
                     ->sortable(),
-                    
+
                 TextColumn::make('created_at')
                     ->label(__('Created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 TextColumn::make('updated_at')
                     ->label(__('Updated'))
                     ->dateTime()
@@ -223,13 +223,13 @@ class InvoiceResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                
+
                 Tables\Filters\SelectFilter::make('invoice_status_id')
                     ->relationship('status', 'name_' . app()->getLocale())
                     ->label(__('Status'))
                     ->searchable()
                     ->preload(),
-                    
+
                 Tables\Filters\SelectFilter::make('customer_id')
                     ->relationship('customer', 'first_name', function ($query) {
                         return $query->select(['id', 'first_name', 'last_name'])
@@ -239,7 +239,7 @@ class InvoiceResource extends Resource
                     ->label(__('Customer'))
                     ->searchable()
                     ->preload(),
-                    
+
                 Tables\Filters\Filter::make('issue_date')
                     ->form([
                         Forms\Components\DatePicker::make('issue_from')
@@ -258,7 +258,7 @@ class InvoiceResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('issue_date', '<=', $date),
                             );
                     }),
-                    
+
                 Tables\Filters\Filter::make('due_date')
                     ->form([
                         Forms\Components\DatePicker::make('due_from')
@@ -312,7 +312,7 @@ class InvoiceResource extends Resource
             'edit' => Pages\EditInvoice::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getModelLabel(): string
     {
         return __('Invoice');
@@ -325,6 +325,6 @@ class InvoiceResource extends Resource
 
     public static function getNavigationGroup(): string
     {
-        return __('Sales');
+        return __('Invoices');
     }
 }

@@ -14,6 +14,10 @@ class ListInvoices extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            // Actions\Action::make('invoice_template_settings')
+            //     ->label('Invoice Template Settings')
+            //     ->icon('heroicon-o-document-text')
+            //     ->url(route('filament.admin.pages.invoice-template-settings')),
         ];
     }
 }

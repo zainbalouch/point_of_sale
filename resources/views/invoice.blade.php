@@ -52,6 +52,36 @@
             }
         </style>
     @endif
+
+    <!-- Print Styles for Header on Each Page -->
+    <style>
+        @media print {
+
+            @page {
+                margin-top: 10px;
+                /* margin-bottom: 50px; */
+            }
+
+            /* header {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                background-color: white;
+                z-index: 1000;
+                margin-bottom: 100px;
+            } */
+
+            /* This class will be repeated on each page */
+            .header-print {
+                display: table-header-group;
+            }
+
+            /* For page breaks */
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -123,6 +153,7 @@
                             <td class="col-4"><strong>{{ __('Products') }}</strong></td>
                             <td class="col-1 text-center"><strong>{{ __('Quantity') }}</strong></td>
                             <td class="col-2 text-center"><strong>{{ __('Unit Price') }}</strong></td>
+                            <td class="col-2 text-center"><strong>{{ __('Discount') }}</strong></td>
                             <td class="col-2 text-center"><strong>{{ __('VAT') }}</strong></td>
                             @if ($order->other_taxes > 0)
                                 <td class="col-2 text-center"><strong>{{ __('Other Taxes') }}</strong></td>
@@ -141,34 +172,21 @@
                                 </td>
                                 <td class="col-1 text-center">{{ $item->quantity }}</td>
                                 <td class="col-2 text-center">
-                                    @if (app()->getLocale() === 'ar')
-                                        {{ number_format($item->unit_price, 2) }}
-                                    @else
-                                        {{ number_format($item->unit_price, 2) }}
-                                    @endif
+                                    {{ number_format($item->unit_price, 2) }}
                                 </td>
                                 <td class="col-2 text-center">
-                                    @if (app()->getLocale() === 'ar')
-                                        {{ number_format($item->vat_amount ?? 0, 2) }}
-                                    @else
-                                        {{ number_format($item->vat_amount ?? 0, 2) }}
-                                    @endif
+                                    {{ number_format($item->discount_amount ?? 0, 2) }}
+                                </td>
+                                <td class="col-2 text-center">
+                                    {{ number_format($item->vat_amount ?? 0, 2) }}
                                 </td>
                                 @if ($order->other_taxes > 0)
                                     <td class="col-2 text-center">
-                                        @if (app()->getLocale() === 'ar')
-                                            {{ number_format($item->other_taxes_amount ?? 0, 2) }}
-                                        @else
-                                            {{ number_format($item->other_taxes_amount ?? 0, 2) }}
-                                        @endif
+                                        {{ number_format($item->other_taxes_amount ?? 0, 2) }}
                                     </td>
                                 @endif
                                 <td class="col-2 invoice-text-end">
-                                    @if (app()->getLocale() === 'ar')
-                                        {{ number_format($item->total_price, 2) }}
-                                    @else
-                                        {{ number_format($item->total_price, 2) }}
-                                    @endif
+                                    {{ number_format($item->total_price, 2) }}
                                 </td>
                             </tr>
                         @endforeach
@@ -195,6 +213,20 @@
                                     @endif
                                 </td>
                             </tr>
+                            @if ($order->discount > 0)
+                                <tr>
+                                    <td class="invoice-text-end"><strong>{{ __('Discount') }}:</strong></td>
+                                    <td class="col-6 invoice-text-end">
+                                        @if (app()->getLocale() === 'ar')
+                                            -{{ number_format($order->discount, 2) }}
+                                            {{ $order->currency->code ?? 'SAR' }}
+                                        @else
+                                            -{{ $order->currency->code ?? 'SAR' }}
+                                            {{ number_format($order->discount, 2) }}
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endif
                             <tr>
                                 <td class="invoice-text-end"><strong>{{ __('VAT') }}:</strong></td>
                                 <td class="col-6 invoice-text-end">
@@ -219,20 +251,7 @@
                                     </td>
                                 </tr>
                             @endif
-                            @if ($order->discount > 0)
-                                <tr>
-                                    <td class="invoice-text-end"><strong>{{ __('Discount') }}:</strong></td>
-                                    <td class="col-6 invoice-text-end">
-                                        @if (app()->getLocale() === 'ar')
-                                            -{{ number_format($order->discount, 2) }}
-                                            {{ $order->currency->code ?? 'SAR' }}
-                                        @else
-                                            -{{ $order->currency->code ?? 'SAR' }}
-                                            {{ number_format($order->discount, 2) }}
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endif
+
                             <tr>
                                 <td class="invoice-text-end"><strong>{{ __('Total') }}:</strong></td>
                                 <td class="col-6 invoice-text-end">
@@ -278,17 +297,10 @@
         <!-- Footer -->
         <footer class="invoice-text-start mt-4">
             <div class="mt-3 policy-section invoice-text-start">
-                <p class="mb-2"><strong>{{ __('Payment, return and exchange policy') }}</strong></p>
-                <p class="mb-1"><strong>{{ __('First: Ready-made pieces') }}</strong></p>
-                <p class="text-1 mb-3">
-                    {{ __('If the piece is received as it is without modifications or repairs, the full amount will be paid and the amount can be refunded within one day and replaced within 3 days, provided that the piece is in good condition. In the event of repairs or modifications to the piece, the full amount is paid, non-refundable and exchangeable.') }}
-                </p>
-                <p class="mb-1"><strong>{{ __('Second: Special design') }}</strong></p>
-                <ol class="text-1">
-                    <li>{{ __('50% of the design and implementation amount is paid as a non-refundable deposit after agreement and approval of the design.') }}</li>
-                    <li>{{ __('The full amount is paid for the value of the fabrics before they are cut after agreement and approval. It is non-refundable.') }}</li>
-                    <li>{{ __('The remaining 50% of the design and implementation value will be paid in addition to the resulting increases if any modifications are added to the design upon receipt of the piece.') }}</li>
-                </ol>
+
+                @if ($noteContent)
+                    {!! $noteContent !!}
+                @endif
             </div>
         </footer>
     </div>
