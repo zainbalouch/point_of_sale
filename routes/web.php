@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +27,10 @@ Route::group(
         // Notifications
         Route::get('notifications/mark-as-read/{id}', 'NotificationController@markAsRead')->name('notifications.markAsRead');
         Route::get('notifications/mark-all-as-read', 'NotificationController@markAllAsRead')->name('notifications.markAllAsRead');
+
+        Route::get('invoice/{order}', [App\Http\Controllers\InvoiceController::class, 'show'])->name('invoice.show');
+        Route::get('invoice/public/{orderNumber}', [App\Http\Controllers\InvoiceController::class, 'publicAccess'])->name('invoice.public');
+
     }
 );
 

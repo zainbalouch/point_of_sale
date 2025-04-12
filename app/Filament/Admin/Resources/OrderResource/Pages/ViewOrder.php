@@ -14,6 +14,11 @@ class ViewOrder extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
+            Actions\Action::make('printInvoice')
+                ->label(__('Print Invoice'))
+                ->icon('heroicon-o-printer')
+                ->url(fn ($record) => route('invoice.show', $record))
+                ->openUrlInNewTab(),
         ];
     }
 
