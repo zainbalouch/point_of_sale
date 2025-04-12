@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\OrderResource\Pages;
 use App\Filament\Admin\Resources\OrderResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\View\View;
 
 class ViewOrder extends ViewRecord
 {
@@ -18,7 +19,9 @@ class ViewOrder extends ViewRecord
                 ->label(__('Print Invoice'))
                 ->icon('heroicon-o-printer')
                 ->url(fn ($record) => route('invoice.show', $record))
-                ->openUrlInNewTab(),
+                ->extraAttributes([
+                    'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
+                ])
         ];
     }
 
@@ -30,5 +33,18 @@ class ViewOrder extends ViewRecord
         $data['balance_left'] = number_format($total - $amountPaid, 2, '.', '');
 
         return $data;
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [];
+    }
+
+    /**
+     * Include the print script component in the view
+     */
+    public function getFooter(): View
+    {
+        return view('components.print-script');
     }
 }
