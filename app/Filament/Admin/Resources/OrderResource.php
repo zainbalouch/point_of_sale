@@ -899,6 +899,13 @@ class OrderResource extends Resource
                     ->label(__('View')),
                 Tables\Actions\EditAction::make()
                     ->label(__('Edit')),
+                Tables\Actions\Action::make('printInvoice')
+                    ->label(__('Print Invoice'))
+                    ->icon('heroicon-o-printer')
+                    ->url(fn ($record) => route('invoice.show', $record))
+                    ->extraAttributes([
+                        'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
+                    ]),
             ])
             ->actionsColumnLabel(__('Actions'))
             ->bulkActions([

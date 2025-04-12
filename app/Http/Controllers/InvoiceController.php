@@ -15,7 +15,7 @@ class InvoiceController extends Controller
     {
         // Generate QR code with scanning URL
         $qrCode = GenerateQrCode::fromArray([
-            new Seller($order->company->name), // seller name
+            new Seller($order->company->legal_name), // seller name
             new TaxNumber($order->company->tax_number), // seller tax number
             new InvoiceDate($order->created_at), // invoice date as Zulu ISO8601 @see https://en.wikipedia.org/wiki/ISO_8601
             new InvoiceTotalAmount($order->total), // invoice total amount
