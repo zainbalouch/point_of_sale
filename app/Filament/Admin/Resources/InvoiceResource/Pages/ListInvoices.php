@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\InvoiceResource\Pages;
 use App\Filament\Admin\Resources\InvoiceResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Contracts\View\View;
 
 class ListInvoices extends ListRecords
 {
@@ -19,5 +20,10 @@ class ListInvoices extends ListRecords
             //     ->icon('heroicon-o-document-text')
             //     ->url(route('filament.admin.pages.invoice-template-settings')),
         ];
+    }
+
+    public function getFooter(): View
+    {
+        return view('components.print-script');
     }
 }

@@ -17,6 +17,8 @@ use App\Models\Product;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderResource extends Resource
 {
@@ -39,20 +41,90 @@ class OrderResource extends Resource
                             ->maxLength(255),
                     ]),
 
+                Forms\Components\Section::make(__('Point of Sale Information'))
+                    ->schema([
+                        Forms\Components\Select::make('company_id')
+                            ->relationship('company', 'legal_name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                if ($user->point_of_sale_id) {
+                                    return \App\Models\PointOfSale::find($user->point_of_sale_id)?->company_id;
+                                }
+                                return null;
+                            })
+                            ->disabled(function () {
+                                $user = Filament::auth()->user();
+                                return $user->point_of_sale_id !== null;
+                            })
+                            ->dehydrated()
+                            ->live()
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                $set('point_of_sale_id', null);
+                            }),
+                        Forms\Components\Select::make('point_of_sale_id')
+                            ->relationship('pointOfSale', 'name_' . app()->getLocale())
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user->point_of_sale_id;
+                            })
+                            ->disabled(function () {
+                                $user = Filament::auth()->user();
+                                return $user->point_of_sale_id !== null;
+                            })
+                            ->dehydrated(),
+                    ])
+                    ->columns(2),
+
                 Forms\Components\Section::make(__('Customer Information'))
                     ->schema([
                         Forms\Components\Select::make('customer_id')
                             ->relationship(
                                 name: 'customer',
-                                modifyQueryUsing: fn(Builder $query) => $query
-                                    ->select(['id', 'first_name', 'last_name'])
-                                    ->orderBy('first_name')
+                                modifyQueryUsing: function (Builder $query) {
+                                    $user = Filament::auth()->user();
+                                    if ($user->point_of_sale_id) {
+                                        return $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                    }
+                                    return $query;
+                                }
                             )
                             ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}")
                             ->searchable(['first_name', 'last_name'])
                             ->preload()
                             ->label(__('Customer'))
                             ->required()
+                            ->live()
+                            ->afterStateHydrated(function ($state, Forms\Set $set) {
+                                if (!$state) return;
+
+                                $customer = \App\Models\Customer::find($state);
+                                if ($customer) {
+                                    $set('customer_name', "{$customer->first_name} {$customer->last_name}");
+                                    $set('customer_email', $customer->email);
+                                    $set('customer_phone_number', $customer->phone_number);
+                                }
+                            })
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                if (!$state) {
+                                    $set('customer_name', null);
+                                    $set('customer_email', null);
+                                    $set('customer_phone_number', null);
+                                    return;
+                                }
+
+                                $customer = \App\Models\Customer::find($state);
+                                if ($customer) {
+                                    $set('customer_name', "{$customer->first_name} {$customer->last_name}");
+                                    $set('customer_email', $customer->email);
+                                    $set('customer_phone_number', $customer->phone_number);
+                                }
+                            })
                             ->createOptionForm([
                                 Forms\Components\Section::make(__('Personal Information'))
                                     ->schema([
@@ -132,18 +204,16 @@ class OrderResource extends Resource
                             ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}")
                             ->label(__('Assigned Staff'))
                             ->searchable(['first_name', 'last_name'])
-                            ->preload(),
-                        Forms\Components\Select::make('company_id')
-                            ->relationship('company', 'legal_name')
-                            ->label(__('Company'))
-                            ->searchable()
                             ->preload()
-                            ->default(function () {
-                                $user = Filament::auth()->user();
-                                return $user && $user->company_id ? $user->company_id : null;
-                            }),
+                            ->default(fn() => Filament::auth()->id()),
+                        Forms\Components\Hidden::make('customer_name')
+                            ->dehydrated(),
+                        Forms\Components\Hidden::make('customer_email')
+                            ->dehydrated(),
+                        Forms\Components\Hidden::make('customer_phone_number')
+                            ->dehydrated(),
                     ])
-                    ->columns(3),
+                    ->columns(2),
 
 
                 // Forms\Components\Section::make(__('Financial Details'))
@@ -896,21 +966,40 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->label(__('View')),
+                    ->visible(function (Order $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
+                    }),
                 Tables\Actions\EditAction::make()
-                    ->label(__('Edit')),
+                    ->visible(function (Order $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(function (Order $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
+                    }),
                 Tables\Actions\Action::make('printInvoice')
                     ->label(__('Print Invoice'))
                     ->icon('heroicon-o-printer')
-                    ->url(fn ($record) => route('invoice.show', $record))
+                    ->url(fn ($record) => route('order.invoice.show', $record))
                     ->extraAttributes([
                         'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
-                    ]),
+                    ])
+                    ->visible(function (Order $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
+                    }),
             ])
             ->actionsColumnLabel(__('Actions'))
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(function () {
+                            $user = Filament::auth()->user();
+                            return !$user->point_of_sale_id;
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -1048,5 +1137,47 @@ class OrderResource extends Resource
 
         $salePrice = $price + $totalTaxAmount;
         $set('sale_price', round($salePrice, 2));
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
+
+        $user = Filament::auth()->user();
+        if ($user->point_of_sale_id) {
+            return $query->where('point_of_sale_id', $user->point_of_sale_id);
+        }
+        return $query;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return $user->point_of_sale_id === null || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return $user->point_of_sale_id === null || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return $user->point_of_sale_id === null || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canCreate(): bool
+    {
+        return true;
+    }
+
+    public static function canAccess(): bool
+    {
+        return true;
     }
 }

@@ -36,6 +36,7 @@ class OrderItem extends Model
         'discount_amount' => 'decimal:2',
         'vat_amount' => 'decimal:2',
         'other_taxes_amount' => 'decimal:2',
+        'total_price' => 'decimal:2',
     ];
 
     /**
@@ -54,24 +55,6 @@ class OrderItem extends Model
     public function setUnitPriceAttribute($value)
     {
         $this->attributes['unit_price'] = $value * 100;
-    }
-
-    /**
-     * Get the total price attribute.
-     * Convert from stored integer value (cents) to decimal.
-     */
-    public function getTotalPriceAttribute($value)
-    {
-        return $value / 100;
-    }
-
-    /**
-     * Set the total price attribute.
-     * Convert from decimal to integer value (cents) for storage.
-     */
-    public function setTotalPriceAttribute($value)
-    {
-        $this->attributes['total_price'] = $value * 100;
     }
 
     /**

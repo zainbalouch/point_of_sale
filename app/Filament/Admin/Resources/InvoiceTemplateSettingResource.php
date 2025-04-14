@@ -60,17 +60,6 @@ class InvoiceTemplateSettingResource extends Resource
 
                         RichEditor::make('value_en')
                             ->label(__('Value (English)'))
-                            ->disableToolbarButtons([
-                                'attachFiles',
-                                'blockquote',
-                                'link',
-                                'redo',
-                                'undo',
-                                'codeBlock',
-                                'h2',
-                                'h3',
-                                'image',
-                            ])
                             ->columnSpan([
                                 'default' => 1,
                                 'sm' => 3,
@@ -79,17 +68,6 @@ class InvoiceTemplateSettingResource extends Resource
 
                         RichEditor::make('value_ar')
                             ->label(__('Value (Arabic)'))
-                            ->disableToolbarButtons([
-                                'attachFiles',
-                                'blockquote',
-                                'link',
-                                'redo',
-                                'undo',
-                                'codeBlock',
-                                'h2',
-                                'h3',
-                                'image',
-                            ])
                             ->columnSpan([
                                 'default' => 1,
                                 'sm' => 3,

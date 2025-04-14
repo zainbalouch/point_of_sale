@@ -14,8 +14,6 @@ class InvoiceItem extends Model
 
     protected $fillable = [
         'invoice_id',
-        'invoiceable_id',
-        'invoiceable_type',
         'product_name_en',
         'product_name_ar',
         'product_description_en',
@@ -24,15 +22,20 @@ class InvoiceItem extends Model
         'product_code',
         'quantity',
         'unit_price',
-        'tax_id',
-        'tax_amount',
+        'vat_amount',
+        'other_taxes_amount',
         'discount_amount',
-        'subtotal',
-        'total'
+        'total_price',
+        'note'
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'quantity' => 'integer',
+        'unit_price' => 'decimal:2',
+        'vat_amount' => 'decimal:2',
+        'other_taxes_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'total_price' => 'decimal:2',
     ];
 
     // Money fields accessors and mutators
@@ -46,14 +49,24 @@ class InvoiceItem extends Model
         $this->attributes['unit_price'] = $value * 100;
     }
 
-    public function getTaxAmountAttribute($value)
+    public function getVatAmountAttribute($value)
     {
         return $value / 100;
     }
 
-    public function setTaxAmountAttribute($value)
+    public function setVatAmountAttribute($value)
     {
-        $this->attributes['tax_amount'] = $value * 100;
+        $this->attributes['vat_amount'] = $value * 100;
+    }
+
+    public function getOtherTaxesAmountAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setOtherTaxesAmountAttribute($value)
+    {
+        $this->attributes['other_taxes_amount'] = $value * 100;
     }
 
     public function getDiscountAmountAttribute($value)
@@ -66,40 +79,20 @@ class InvoiceItem extends Model
         $this->attributes['discount_amount'] = $value * 100;
     }
 
-    public function getSubtotalAttribute($value)
+    public function getTotalPriceAttribute($value)
     {
         return $value / 100;
     }
 
-    public function setSubtotalAttribute($value)
+    public function setTotalPriceAttribute($value)
     {
-        $this->attributes['subtotal'] = $value * 100;
-    }
-
-    public function getTotalAttribute($value)
-    {
-        return $value / 100;
-    }
-
-    public function setTotalAttribute($value)
-    {
-        $this->attributes['total'] = $value * 100;
+        $this->attributes['total_price'] = $value * 100;
     }
 
     // Relationships
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);
-    }
-
-    public function tax()
-    {
-        return $this->belongsTo(Tax::class);
-    }
-
-    public function invoiceable()
-    {
-        return $this->morphTo();
     }
 
     // Activity logging

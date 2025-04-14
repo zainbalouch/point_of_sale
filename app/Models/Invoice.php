@@ -25,16 +25,20 @@ class Invoice extends Model
         'billing_address_id',
         'shipping_address_id',
         'subtotal',
-        'tax_amount',
-        'discount_amount',
-        'total_amount',
+        'vat',
+        'other_taxes',
+        'discount',
+        'total',
+        'amount_paid',
         'issue_date',
         'due_date',
         'paid_date',
         'invoice_status_id',
         'currency_id',
         'issued_by_user',
+        'point_of_sale_id',
         'meta',
+        'order_id',
     ];
 
     protected $casts = [
@@ -42,6 +46,12 @@ class Invoice extends Model
         'due_date' => 'datetime',
         'paid_date' => 'datetime',
         'meta' => 'json',
+        'subtotal' => 'decimal:2',
+        'vat' => 'decimal:2',
+        'other_taxes' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'total' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
     ];
 
     // Money fields accessors and mutators
@@ -55,34 +65,54 @@ class Invoice extends Model
         $this->attributes['subtotal'] = $value * 100;
     }
 
-    public function getTaxAmountAttribute($value)
+    public function getVatAttribute($value)
     {
         return $value / 100;
     }
 
-    public function setTaxAmountAttribute($value)
+    public function setVatAttribute($value)
     {
-        $this->attributes['tax_amount'] = $value * 100;
+        $this->attributes['vat'] = $value * 100;
     }
 
-    public function getDiscountAmountAttribute($value)
+    public function getOtherTaxesAttribute($value)
     {
         return $value / 100;
     }
 
-    public function setDiscountAmountAttribute($value)
+    public function setOtherTaxesAttribute($value)
     {
-        $this->attributes['discount_amount'] = $value * 100;
+        $this->attributes['other_taxes'] = $value * 100;
     }
 
-    public function getTotalAmountAttribute($value)
+    public function getDiscountAttribute($value)
     {
         return $value / 100;
     }
 
-    public function setTotalAmountAttribute($value)
+    public function setDiscountAttribute($value)
     {
-        $this->attributes['total_amount'] = $value * 100;
+        $this->attributes['discount'] = $value * 100;
+    }
+
+    public function getTotalAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setTotalAttribute($value)
+    {
+        $this->attributes['total'] = $value * 100;
+    }
+
+    public function getAmountPaidAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setAmountPaidAttribute($value)
+    {
+        $this->attributes['amount_paid'] = $value * 100;
     }
 
     // Relationships
@@ -115,7 +145,7 @@ class Invoice extends Model
      */
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     /**
@@ -151,6 +181,14 @@ class Invoice extends Model
     }
 
     /**
+     * Get the point of sale associated with the invoice.
+     */
+    public function pointOfSale(): BelongsTo
+    {
+        return $this->belongsTo(PointOfSale::class);
+    }
+
+    /**
      * Get the payments for the invoice.
      */
     public function payments(): HasMany
@@ -164,6 +202,14 @@ class Invoice extends Model
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
+    }
+
+    /**
+     * Get the order associated with the invoice.
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     // Activity logging
@@ -180,15 +226,25 @@ class Invoice extends Model
         parent::boot();
 
         static::creating(function ($invoice) {
-            // Get the last invoice number and extract the numeric part
-            $lastInvoice = static::orderBy('number', 'desc')->first();
-            $lastNumber = $lastInvoice ? intval(substr($lastInvoice->number, 4)) : 0;
-            
+            // Get the last invoice number for this company, including soft-deleted records
+            $lastInvoice = static::withTrashed()
+                ->where('company_id', $invoice->company_id)
+                ->orderBy('number', 'desc')
+                ->first();
+
+            // Extract the sequence number from the last invoice
+            $lastNumber = 0;
+            if ($lastInvoice) {
+                // Split the number by '-' and get the last part
+                $parts = explode('-', $lastInvoice->number);
+                $lastNumber = intval(end($parts));
+            }
+
             // Generate the next consecutive number
             $nextNumber = $lastNumber + 1;
-            
-            // Create the new invoice number with padding
-            $invoice->number = 'INV-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+
+            // Create the new invoice number with company prefix and padded number
+            $invoice->number = sprintf('C%03d-INV-%06d', $invoice->company_id, $nextNumber);
         });
     }
 

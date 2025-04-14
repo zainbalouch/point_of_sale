@@ -28,6 +28,7 @@ class Customer extends Model
         'vat_number',
         'address',
         'company_id',
+        'point_of_sale_id',
         'is_active',
         'meta',
     ];
@@ -80,6 +81,14 @@ class Customer extends Model
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
+    }
+
+    /**
+     * Get the point of sale that the customer belongs to.
+     */
+    public function pointOfSale(): BelongsTo
+    {
+        return $this->belongsTo(PointOfSale::class);
     }
 
     /**

@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class PointOfSaleResource extends Resource
 {
@@ -40,27 +41,6 @@ class PointOfSaleResource extends Resource
                             ->maxLength(255)
                             ->placeholder('Arabic translation')
                             ->columnSpan(['sm' => 1]),
-
-                        Forms\Components\Select::make('company_id')
-                            ->relationship('company', 'legal_name')
-                            ->required()
-                            ->searchable()
-                            ->preload()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('legal_name')
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('tax_number')
-                                    ->maxLength(50),
-                                Forms\Components\TextInput::make('email')
-                                    ->email()
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('phone_number')
-                                    ->tel()
-                                    ->maxLength(20),
-                            ])
-                            ->columnSpan(['sm' => 2]),
 
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Active'))

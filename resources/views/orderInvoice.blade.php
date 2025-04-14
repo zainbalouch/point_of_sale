@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- Stylesheet
-======================= -->
+
+
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/bootstrap.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/invoice.css') }}" />
     @if (app()->getLocale() === 'ar')
@@ -85,7 +85,7 @@
                         alt="Koice" />
                 </div>
                 <div class="col-5 text-center invoice-text-end">
-                    <h4 class="text-7 mb-0">{{ __('Invoice') }}</h4>
+                    <h4 class="text-7 mb-0">{{ __('Order') }}</h4>
                 </div>
             </div>
             <hr>
@@ -101,7 +101,7 @@
                         {{ $order->created_at->format('d/m/Y') }}
                     @endif
                 </div>
-                <div class="col-6 invoice-text-end"> <strong>{{ __('Invoice No') }}:</strong> {{ $order->number }}
+                <div class="col-6 invoice-text-end"> <strong>{{ __('Order No') }}:</strong> {{ $order->number }}
                 </div>
 
             </div>
@@ -187,29 +187,31 @@
                 </table>
             </div>
             <div class="row">
-                <div class="col-6 text-center d-flex align-items-center justify-content-center">
-                    <div>
-                        <img src="{{ $qrCode }}" alt="{{ __('QR Code') }}" class="img-fluid"
-                            style="max-width: 200px;">
-                    </div>
-                </div>
-                <div class="col-6">
+                <div class="col-12">
                     <div class="table-responsive">
                         <table class="table border border-top-0 mb-0">
                             <tr>
-                                <td class="invoice-text-end"><strong>{{ __('Subtotal') }}:</strong></td>
-                                <td class="col-6 invoice-text-end">
+                                <td class="col-3 invoice-text-end"><strong>{{ __('Subtotal') }}:</strong></td>
+                                <td class="col-3 invoice-text-end">
                                     @if (app()->getLocale() === 'ar')
                                         {{ number_format($order->subtotal, 2) }} {{ $order->currency->code ?? 'SAR' }}
                                     @else
                                         {{ $order->currency->code ?? 'SAR' }} {{ number_format($order->subtotal, 2) }}
                                     @endif
                                 </td>
+                                <td class="col-3 invoice-text-end"><strong>{{ __('Total') }}:</strong></td>
+                                <td class="col-3 invoice-text-end">
+                                    @if (app()->getLocale() === 'ar')
+                                        {{ number_format($order->total, 2) }} {{ $order->currency->code ?? 'SAR' }}
+                                    @else
+                                        {{ $order->currency->code ?? 'SAR' }} {{ number_format($order->total, 2) }}
+                                    @endif
+                                </td>
                             </tr>
                             @if ($order->discount > 0)
                                 <tr>
-                                    <td class="invoice-text-end"><strong>{{ __('Discount') }}:</strong></td>
-                                    <td class="col-6 invoice-text-end">
+                                    <td class="col-3 invoice-text-end"><strong>{{ __('Discount') }}:</strong></td>
+                                    <td class="col-3 invoice-text-end">
                                         @if (app()->getLocale() === 'ar')
                                             -{{ number_format($order->discount, 2) }}
                                             {{ $order->currency->code ?? 'SAR' }}
@@ -218,22 +220,43 @@
                                             {{ number_format($order->discount, 2) }}
                                         @endif
                                     </td>
+                                    <td class="col-3 invoice-text-end"><strong>{{ __('Amount Paid') }}:</strong></td>
+                                    <td class="col-3 invoice-text-end">
+                                        @if (app()->getLocale() === 'ar')
+                                            {{ number_format($order->amount_paid ?? 0, 2) }}
+                                            {{ $order->currency->code ?? 'SAR' }}
+                                        @else
+                                            {{ $order->currency->code ?? 'SAR' }}
+                                            {{ number_format($order->amount_paid ?? 0, 2) }}
+                                        @endif
+                                    </td>
                                 </tr>
                             @endif
                             <tr>
-                                <td class="invoice-text-end"><strong>{{ __('VAT') }}:</strong></td>
-                                <td class="col-6 invoice-text-end">
+                                <td class="col-3 invoice-text-end"><strong>{{ __('VAT') }}:</strong></td>
+                                <td class="col-3 invoice-text-end">
                                     @if (app()->getLocale() === 'ar')
                                         {{ number_format($order->vat, 2) }} {{ $order->currency->code ?? 'SAR' }}
                                     @else
                                         {{ $order->currency->code ?? 'SAR' }} {{ number_format($order->vat, 2) }}
                                     @endif
                                 </td>
+                                <td class="col-3 invoice-text-end"><strong>{{ __('Amount Remaining') }}:</strong></td>
+                                <td class="col-3 invoice-text-end">
+                                    @php
+                                        $remaining = ($order->total ?? 0) - ($order->amount_paid ?? 0);
+                                    @endphp
+                                    @if (app()->getLocale() === 'ar')
+                                        {{ number_format($remaining, 2) }} {{ $order->currency->code ?? 'SAR' }}
+                                    @else
+                                        {{ $order->currency->code ?? 'SAR' }} {{ number_format($remaining, 2) }}
+                                    @endif
+                                </td>
                             </tr>
                             @if ($order->other_taxes > 0)
                                 <tr>
-                                    <td class="invoice-text-end"><strong>{{ __('Other Taxes') }}:</strong></td>
-                                    <td class="col-6 invoice-text-end">
+                                    <td class="col-3 invoice-text-end"><strong>{{ __('Other Taxes') }}:</strong></td>
+                                    <td class="col-3 invoice-text-end">
                                         @if (app()->getLocale() === 'ar')
                                             {{ number_format($order->other_taxes, 2) }}
                                             {{ $order->currency->code ?? 'SAR' }}
@@ -242,44 +265,8 @@
                                             {{ number_format($order->other_taxes, 2) }}
                                         @endif
                                     </td>
-                                </tr>
-                            @endif
-
-                            <tr>
-                                <td class="invoice-text-end"><strong>{{ __('Total') }}:</strong></td>
-                                <td class="col-6 invoice-text-end">
-                                    @if (app()->getLocale() === 'ar')
-                                        {{ number_format($order->total, 2) }} {{ $order->currency->code ?? 'SAR' }}
-                                    @else
-                                        {{ $order->currency->code ?? 'SAR' }} {{ number_format($order->total, 2) }}
-                                    @endif
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="invoice-text-end"><strong>{{ __('Amount Paid') }}:</strong></td>
-                                <td class="col-6 invoice-text-end">
-                                    @if (app()->getLocale() === 'ar')
-                                        {{ number_format($order->amount_paid ?? 0, 2) }}
-                                        {{ $order->currency->code ?? 'SAR' }}
-                                    @else
-                                        {{ $order->currency->code ?? 'SAR' }}
-                                        {{ number_format($order->amount_paid ?? 0, 2) }}
-                                    @endif
-                                </td>
-                            </tr>
-                            @php
-                                $remaining = ($order->total ?? 0) - ($order->amount_paid ?? 0);
-                            @endphp
-                            @if ($remaining > 0)
-                                <tr>
-                                    <td class="invoice-text-end"><strong>{{ __('Amount Remaining') }}:</strong></td>
-                                    <td class="col-6 invoice-text-end">
-                                        @if (app()->getLocale() === 'ar')
-                                            {{ number_format($remaining, 2) }} {{ $order->currency->code ?? 'SAR' }}
-                                        @else
-                                            {{ $order->currency->code ?? 'SAR' }} {{ number_format($remaining, 2) }}
-                                        @endif
-                                    </td>
+                                    <td class="col-3"></td>
+                                    <td class="col-3"></td>
                                 </tr>
                             @endif
                         </table>

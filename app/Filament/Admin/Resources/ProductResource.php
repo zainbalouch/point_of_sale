@@ -22,6 +22,8 @@ use Illuminate\Support\Str;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Hidden;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ProductResource extends Resource
 {
@@ -95,7 +97,29 @@ class ProductResource extends Resource
                                 $user = Filament::auth()->user();
                                 return $user && $user->company_id ? $user->company_id : null;
                             })
-                            ->live(),
+                            ->disabled(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->company_id !== null;
+                            })
+                            ->live()
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                $set('point_of_sale_id', null);
+                            }),
+
+                        Forms\Components\Select::make('point_of_sale_id')
+                            ->label(__('Point of Sale'))
+                            ->relationship('pointOfSale', 'name_en')
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->options(function (Forms\Get $get) {
+                                $companyId = $get('company_id');
+                                if (!$companyId) {
+                                    return [];
+                                }
+                                return \App\Models\PointOfSale::where('company_id', $companyId)
+                                    ->pluck('name_en', 'id');
+                            }),
                     ]),
 
                 Section::make(__('Pricing & Media'))
@@ -279,6 +303,13 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = Filament::auth()->user();
+                if ($user->point_of_sale_id) {
+                    return $query->where('point_of_sale_id', $user->point_of_sale_id);
+                }
+                return $query;
+            })
             ->columns([
                 Tables\Columns\ImageColumn::make('image_url_path')
                     ->label('')
@@ -343,16 +374,40 @@ class ProductResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->visible(function (Product $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+                    }),
+                Tables\Actions\EditAction::make()
+                    ->visible(function (Product $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(function (Product $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+                    }),
             ])
             ->actionsColumnLabel(__('Actions'))
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(function () {
+                            $user = Filament::auth()->user();
+                            return !$user->point_of_sale_id;
+                        }),
+                    Tables\Actions\RestoreBulkAction::make()
+                        ->visible(function () {
+                            $user = Filament::auth()->user();
+                            return !$user->point_of_sale_id;
+                        }),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->visible(function () {
+                            $user = Filament::auth()->user();
+                            return !$user->point_of_sale_id;
+                        }),
                 ]),
             ]);
     }
@@ -416,5 +471,33 @@ class ProductResource extends Resource
 
         $salePrice = $price + $totalTaxAmount;
         $set('sale_price', round($salePrice, 2));
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canCreate(): bool
+    {
+        return true;
+    }
+
+    public static function canAccess(): bool
+    {
+        return true;
     }
 }

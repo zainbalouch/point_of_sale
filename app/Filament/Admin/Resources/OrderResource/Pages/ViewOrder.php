@@ -18,7 +18,7 @@ class ViewOrder extends ViewRecord
             Actions\Action::make('printInvoice')
                 ->label(__('Print Invoice'))
                 ->icon('heroicon-o-printer')
-                ->url(fn ($record) => route('invoice.show', $record))
+                ->url(fn ($record) => route('order.invoice.show', $record))
                 ->extraAttributes([
                     'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
                 ])

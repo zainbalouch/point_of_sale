@@ -17,6 +17,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerResource extends Resource
 {
@@ -26,10 +28,16 @@ class CustomerResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        $user = Filament::auth()->user();
+        if ($user->point_of_sale_id) {
+            return $query->where('point_of_sale_id', $user->point_of_sale_id);
+        }
+        return $query;
     }
 
     public static function form(Form $form): Form
@@ -89,7 +97,47 @@ class CustomerResource extends Resource
                                     ->label(__('Company'))
                                     ->relationship('company', 'legal_name')
                                     ->searchable()
-                                    ->preload(),
+                                    ->preload()
+                                    ->required()
+                                    ->default(function () {
+                                        $user = Filament::auth()->user();
+                                        if ($user->point_of_sale_id) {
+                                            return \App\Models\PointOfSale::find($user->point_of_sale_id)?->company_id;
+                                        }
+                                        return null;
+                                    })
+                                    ->disabled(function () {
+                                        $user = Filament::auth()->user();
+                                        return $user->point_of_sale_id !== null;
+                                    })
+                                    ->dehydrated()
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                        $set('point_of_sale_id', null);
+                                    }),
+
+                                Select::make('point_of_sale_id')
+                                    ->label(__('Point of Sale'))
+                                    ->relationship('pointOfSale', 'name_en')
+                                    ->searchable()
+                                    ->preload()
+                                    ->options(function (Forms\Get $get) {
+                                        $companyId = $get('company_id');
+                                        if (!$companyId) {
+                                            return [];
+                                        }
+                                        return \App\Models\PointOfSale::where('company_id', $companyId)
+                                            ->pluck('name_en', 'id');
+                                    })
+                                    ->default(function () {
+                                        $user = Filament::auth()->user();
+                                        return $user->point_of_sale_id;
+                                    })
+                                    ->disabled(function () {
+                                        $user = Filament::auth()->user();
+                                        return $user->point_of_sale_id !== null;
+                                    })
+                                    ->dehydrated(),
 
                                 Toggle::make('is_active')
                                     ->label(__('Active Status'))
@@ -174,16 +222,29 @@ class CustomerResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->where('is_active', true)),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->visible(function (Customer $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+                    }),
+                Tables\Actions\EditAction::make()
+                    ->visible(function (Customer $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(function (Customer $record) {
+                        $user = Filament::auth()->user();
+                        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(function () {
+                            $user = Filament::auth()->user();
+                            return !$user->point_of_sale_id;
+                        }),
                 ]),
             ]);
     }
@@ -220,5 +281,33 @@ class CustomerResource extends Resource
     public static function getNavigationGroup(): string
     {
         return __('Sales');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        $user = Filament::auth()->user();
+        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
+    }
+
+    public static function canCreate(): bool
+    {
+        return true;
+    }
+
+    public static function canAccess(): bool
+    {
+        return true;
     }
 }

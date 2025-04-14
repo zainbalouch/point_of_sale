@@ -12,6 +12,8 @@ class PointOfSale extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
+    protected $table = 'point_of_sales';
+
     protected $fillable = [
         'name_en',
         'name_ar',
@@ -34,7 +36,7 @@ class PointOfSale extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class);
+        return $this->hasMany(User::class);
     }
 
     public function products()

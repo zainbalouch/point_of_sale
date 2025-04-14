@@ -26,7 +26,7 @@ return new class extends Migration
             $table->foreignId('tax_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedBigInteger('tax_amount');
             $table->unsignedBigInteger('discount_amount')->default(0);
-            $table->unsignedBigInteger('total_price');
+            $table->decimal('total_price', 20, 2);
             $table->timestamps();
             $table->softDeletes();
         });

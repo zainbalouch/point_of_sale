@@ -34,6 +34,7 @@ class User extends Authenticatable implements FilamentUser, HasName
         'email',
         'password',
         'company_id',
+        'point_of_sale_id',
     ];
 
     /**
@@ -119,5 +120,13 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
+    }
+
+    /**
+     * Get the point of sale the user belongs to.
+     */
+    public function pointOfSale(): BelongsTo
+    {
+        return $this->belongsTo(PointOfSale::class);
     }
 }

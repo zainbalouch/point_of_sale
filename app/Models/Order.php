@@ -19,6 +19,9 @@ class Order extends Model
     protected $fillable = [
         'number',
         'customer_id',
+        'customer_name',
+        'customer_email',
+        'customer_phone_number',
         'user_id',
         'company_id',
         'order_status_id',
@@ -37,6 +40,7 @@ class Order extends Model
         'delivered_at',
         'shipped_at',
         'meta',
+        'point_of_sale_id',
     ];
 
     protected $casts = [
@@ -75,6 +79,60 @@ class Order extends Model
                 }
             }
         });
+
+        // static::created(function ($order) {
+        //     // Create an invoice for the order
+        //     $invoice = new Invoice([
+        //         'customer_name' => $order->customer->full_name,
+        //         'customer_email' => $order->customer->email,
+        //         'customer_phone' => $order->customer->phone_number,
+        //         'company_id' => $order->company_id,
+        //         'customer_id' => $order->customer_id,
+        //         'billing_address_id' => $order->billing_address_id,
+        //         'shipping_address_id' => $order->shipping_address_id,
+        //         'subtotal' => $order->subtotal,
+        //         'vat' => $order->vat,
+        //         'other_taxes' => $order->other_taxes,
+        //         'discount_amount' => $order->discount,
+        //         'total_amount' => $order->total,
+        //         'amount_paid' => $order->amount_paid,
+        //         'issue_date' => now(),
+        //         'due_date' => now()->addDays(30), // 30 days due date
+        //         'invoice_status_id' => 1, // Draft status
+        //         'currency_id' => $order->currency_id,
+        //         'issued_by_user' => $order->user_id,
+        //         'point_of_sale_id' => $order->point_of_sale_id,
+        //         'meta' => [
+        //             'order_id' => $order->id,
+        //             'order_number' => $order->number
+        //         ]
+        //     ]);
+
+        //     $invoice->save();
+
+        //     // Create invoice items from order items
+        //     foreach ($order->items as $item) {
+        //         $invoiceItem = new InvoiceItem([
+        //             'invoice_id' => $invoice->id,
+        //             'product_name_en' => $item->product_name_en,
+        //             'product_name_ar' => $item->product_name_ar,
+        //             'product_description_en' => $item->product_description_en,
+        //             'product_description_ar' => $item->product_description_ar,
+        //             'product_sku' => $item->product_sku,
+        //             'product_code' => $item->product_code,
+        //             'quantity' => $item->quantity,
+        //             'unit_price' => $item->unit_price,
+        //             'vat_amount' => $item->vat_amount,
+        //             'other_taxes_amount' => $item->other_taxes_amount,
+        //             'discount_amount' => $item->discount_amount,
+        //             'subtotal' => $item->total_price,
+        //             'total' => $item->total_price,
+        //             'note' => $item->note
+        //         ]);
+
+        //         $invoiceItem->save();
+        //     }
+        // });
     }
 
     /**
@@ -155,6 +213,22 @@ class Order extends Model
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
+    }
+
+    /**
+     * Get the point of sale associated with the order.
+     */
+    public function pointOfSale(): BelongsTo
+    {
+        return $this->belongsTo(PointOfSale::class);
+    }
+
+    /**
+     * Get the invoices for the order.
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     /**
