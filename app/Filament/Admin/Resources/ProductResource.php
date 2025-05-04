@@ -91,34 +91,28 @@ class ProductResource extends Resource
 
                         Select::make('company_id')
                             ->label(__('Company'))
-                            ->relationship('company', 'legal_name')
+                            ->options(function () {
+                                $user = Filament::auth()->user();
+                                if ($user && $user->company_id) {
+                                    return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
+                                }
+                                return [];
+                            })
                             ->required()
                             ->searchable()
                             ->preload()
                             ->default(function () {
                                 $user = Filament::auth()->user();
-
-                                // If user has company_id, use it
                                 if ($user && $user->company_id) {
                                     return $user->company_id;
                                 }
-
-                                // If user has point_of_sale_id but no company_id, get company from point of sale
-                                if ($user && $user->point_of_sale_id) {
-                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
-                                    if ($pointOfSale) {
-                                        return $pointOfSale->company_id;
-                                    }
-                                }
-
                                 return null;
                             })
                             ->disabled(function () {
                                 $user = Filament::auth()->user();
-                                // Make disabled if user has company_id or point_of_sale_id
-                                return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
+                                return $user && $user->company_id;
                             })
-                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                            ->dehydrated(true)
                             ->live()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
                                 $set('point_of_sale_id', null);
@@ -129,8 +123,6 @@ class ProductResource extends Resource
                             ->options(function (Forms\Get $get) {
                                 $companyId = $get('company_id');
                                 if (!$companyId) {
-                                    // If user has a point_of_sale_id but no company_id is selected yet,
-                                    // we need to get the company_id from the user's point of sale
                                     $user = Filament::auth()->user();
                                     if ($user && $user->point_of_sale_id) {
                                         $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
@@ -155,7 +147,7 @@ class ProductResource extends Resource
                                 $user = Filament::auth()->user();
                                 return $user && $user->point_of_sale_id;
                             })
-                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                            ->dehydrated(true)
                             ->searchable(),
                     ]),
 
@@ -276,17 +268,92 @@ class ProductResource extends Resource
                                 Forms\Components\Section::make(__('Category Structure'))
                                     ->description(__('Define how this category fits in your product hierarchy'))
                                     ->schema([
-                                        Forms\Components\Select::make('parent_id')
-                                            ->label(__('Parent category'))
-                                            ->relationship(
-                                                'parentCategory',
-                                                'name_' . app()->getLocale()
-                                            )
+                                        Select::make('company_id')
+                                            ->label(__('Company'))
+                                            ->options(function () {
+                                                $user = Filament::auth()->user();
+
+                                                // If user has company_id, only show that company
+                                                if ($user && $user->company_id) {
+                                                    return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
+                                                }
+
+                                                // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                if ($user && $user->point_of_sale_id) {
+                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                    if ($pointOfSale && $pointOfSale->company_id) {
+                                                        return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
+                                                    }
+                                                }
+
+                                                // Otherwise show all companies
+                                                return \App\Models\Company::pluck('legal_name', 'id');
+                                            })
+                                            ->required()
                                             ->searchable()
                                             ->preload()
-                                            ->nullable()
-                                            ->placeholder(__('Select Parent Category'))
-                                            ->helperText(__('Choose a parent category to create a hierarchy')),
+                                            ->default(function () {
+                                                $user = Filament::auth()->user();
+
+                                                // If user has company_id, use it
+                                                if ($user && $user->company_id) {
+                                                    return $user->company_id;
+                                                }
+
+                                                // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                if ($user && $user->point_of_sale_id) {
+                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                    if ($pointOfSale) {
+                                                        return $pointOfSale->company_id;
+                                                    }
+                                                }
+
+                                                return null;
+                                            })
+                                            ->disabled(function () {
+                                                $user = Filament::auth()->user();
+                                                // Make disabled if user has company_id or point_of_sale_id
+                                                return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
+                                            })
+                                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                $set('point_of_sale_id', null);
+                                            }),
+
+                                        Select::make('point_of_sale_id')
+                                            ->label(__('Point of Sale'))
+                                            ->options(function (Forms\Get $get) {
+                                                $companyId = $get('company_id');
+                                                $user = Filament::auth()->user();
+
+                                                // If user has point_of_sale_id, only show that POS
+                                                if ($user && $user->point_of_sale_id) {
+                                                    return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                        ->pluck('name_en', 'id');
+                                                }
+
+                                                // If no company selected, return empty
+                                                if (!$companyId) {
+                                                    return [];
+                                                }
+
+                                                // Otherwise show POS from selected company
+                                                return \App\Models\PointOfSale::where('company_id', $companyId)
+                                                    ->where('is_active', true)
+                                                    ->pluck('name_en', 'id');
+                                            })
+                                            ->required()
+                                            ->default(function () {
+                                                $user = Filament::auth()->user();
+                                                return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
+                                            })
+                                            ->disabled(function () {
+                                                $user = Filament::auth()->user();
+                                                return $user && $user->point_of_sale_id;
+                                            })
+                                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                                            ->searchable(),
 
                                         Forms\Components\TextInput::make('slug')
                                             ->label(__('URL Slug'))
@@ -295,20 +362,20 @@ class ProductResource extends Resource
                                             ->maxLength(255)
                                             ->prefixIcon('heroicon-m-link')
                                             ->helperText(__('This will be used in the URL. Use lowercase letters, numbers, and hyphens only.')),
-
-                                        Forms\Components\Select::make('company_id')
-                                            ->label(__('Company'))
-                                            ->relationship('company', 'legal_name')
-                                            ->required()
-                                            ->searchable()
-                                            ->preload()
-                                            ->default(function () {
-                                                $user = Filament::auth()->user();
-                                                return $user && $user->company_id ? $user->company_id : null;
-                                            }),
                                     ])
                                     ->columns(1),
                             ])
+                            ->createOptionUsing(function (array $data) {
+                                return ProductCategory::create([
+                                    'name_en' => $data['name_en'],
+                                    'name_ar' => $data['name_ar'],
+                                    'description_en' => $data['description_en'],
+                                    'description_ar' => $data['description_ar'],
+                                    'slug' => $data['slug'],
+                                    'company_id' => $data['company_id'],
+                                    'point_of_sale_id' => $data['point_of_sale_id'],
+                                ])->id;
+                            })
                             ->createOptionModalHeading(__('Create new product category')),
 
                         Select::make('currency_id')

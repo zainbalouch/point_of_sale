@@ -190,22 +190,52 @@ class OrderResource extends Resource
                                             ->schema([
                                                 Forms\Components\Select::make('company_id')
                                                     ->label(__('Company'))
-                                                    ->relationship('company', 'legal_name')
+                                                    ->options(function () {
+                                                        $user = Filament::auth()->user();
+
+                                                        // If user has company_id, only show that company
+                                                        if ($user && $user->company_id) {
+                                                            return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
+                                                        }
+
+                                                        // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                        if ($user && $user->point_of_sale_id) {
+                                                            $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                            if ($pointOfSale && $pointOfSale->company_id) {
+                                                                return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
+                                                            }
+                                                        }
+
+                                                        // Otherwise show all companies
+                                                        return \App\Models\Company::pluck('legal_name', 'id');
+                                                    })
+                                                    ->required()
                                                     ->searchable()
                                                     ->preload()
-                                                    ->required()
                                                     ->default(function () {
                                                         $user = Filament::auth()->user();
-                                                        if ($user->point_of_sale_id) {
-                                                            return \App\Models\PointOfSale::find($user->point_of_sale_id)?->company_id;
+
+                                                        // If user has company_id, use it
+                                                        if ($user && $user->company_id) {
+                                                            return $user->company_id;
                                                         }
-                                                        return $user && $user->company_id ? $user->company_id : null;
+
+                                                        // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                        if ($user && $user->point_of_sale_id) {
+                                                            $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                            if ($pointOfSale) {
+                                                                return $pointOfSale->company_id;
+                                                            }
+                                                        }
+
+                                                        return null;
                                                     })
                                                     ->disabled(function () {
                                                         $user = Filament::auth()->user();
-                                                        return $user->point_of_sale_id !== null;
+                                                        // Make disabled if user has company_id or point_of_sale_id
+                                                        return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
                                                     })
-                                                    ->dehydrated()
+                                                    ->dehydrated(true) // Ensure the value is submitted when disabled
                                                     ->live()
                                                     ->afterStateUpdated(function ($state, Forms\Set $set) {
                                                         $set('point_of_sale_id', null);
@@ -213,26 +243,37 @@ class OrderResource extends Resource
 
                                                 Forms\Components\Select::make('point_of_sale_id')
                                                     ->label(__('Point of Sale'))
-                                                    ->relationship('pointOfSale', 'name_en')
-                                                    ->searchable()
-                                                    ->preload()
                                                     ->options(function (Forms\Get $get) {
                                                         $companyId = $get('company_id');
+                                                        $user = Filament::auth()->user();
+
+                                                        // If user has point_of_sale_id, only show that POS
+                                                        if ($user && $user->point_of_sale_id) {
+                                                            return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                                ->pluck('name_en', 'id');
+                                                        }
+
+                                                        // If no company selected, return empty
                                                         if (!$companyId) {
                                                             return [];
                                                         }
+
+                                                        // Otherwise show POS from selected company
                                                         return \App\Models\PointOfSale::where('company_id', $companyId)
+                                                            ->where('is_active', true)
                                                             ->pluck('name_en', 'id');
                                                     })
+                                                    ->required()
                                                     ->default(function () {
                                                         $user = Filament::auth()->user();
-                                                        return $user->point_of_sale_id;
+                                                        return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
                                                     })
                                                     ->disabled(function () {
                                                         $user = Filament::auth()->user();
-                                                        return $user->point_of_sale_id !== null;
+                                                        return $user && $user->point_of_sale_id;
                                                     })
-                                                    ->dehydrated(),
+                                                    ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                    ->searchable(),
 
                                                 Forms\Components\Toggle::make('is_active')
                                                     ->label(__('Active Status'))
@@ -425,14 +466,90 @@ class OrderResource extends Resource
 
                                                         Forms\Components\Select::make('company_id')
                                                             ->label(__('Company'))
-                                                            ->relationship('company', 'legal_name')
+                                                            ->options(function () {
+                                                                $user = Filament::auth()->user();
+
+                                                                // If user has company_id, only show that company
+                                                                if ($user && $user->company_id) {
+                                                                    return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
+                                                                }
+
+                                                                // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                                if ($user && $user->point_of_sale_id) {
+                                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                    if ($pointOfSale && $pointOfSale->company_id) {
+                                                                        return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
+                                                                    }
+                                                                }
+
+                                                                // Otherwise show all companies
+                                                                return \App\Models\Company::pluck('legal_name', 'id');
+                                                            })
                                                             ->required()
                                                             ->searchable()
                                                             ->preload()
                                                             ->default(function () {
                                                                 $user = Filament::auth()->user();
-                                                                return $user && $user->company_id ? $user->company_id : null;
+
+                                                                // If user has company_id, use it
+                                                                if ($user && $user->company_id) {
+                                                                    return $user->company_id;
+                                                                }
+
+                                                                // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                                if ($user && $user->point_of_sale_id) {
+                                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                    if ($pointOfSale) {
+                                                                        return $pointOfSale->company_id;
+                                                                    }
+                                                                }
+
+                                                                return null;
+                                                            })
+                                                            ->disabled(function () {
+                                                                $user = Filament::auth()->user();
+                                                                // Make disabled if user has company_id or point_of_sale_id
+                                                                return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
+                                                            })
+                                                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                            ->live()
+                                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                                $set('point_of_sale_id', null);
                                                             }),
+
+                                                        Forms\Components\Select::make('point_of_sale_id')
+                                                            ->label(__('Point of Sale'))
+                                                            ->options(function (Forms\Get $get) {
+                                                                $companyId = $get('company_id');
+                                                                $user = Filament::auth()->user();
+
+                                                                // If user has point_of_sale_id, only show that POS
+                                                                if ($user && $user->point_of_sale_id) {
+                                                                    return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                                        ->pluck('name_en', 'id');
+                                                                }
+
+                                                                // If no company selected, return empty
+                                                                if (!$companyId) {
+                                                                    return [];
+                                                                }
+
+                                                                // Otherwise show POS from selected company
+                                                                return \App\Models\PointOfSale::where('company_id', $companyId)
+                                                                    ->where('is_active', true)
+                                                                    ->pluck('name_en', 'id');
+                                                            })
+                                                            ->required()
+                                                            ->default(function () {
+                                                                $user = Filament::auth()->user();
+                                                                return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
+                                                            })
+                                                            ->disabled(function () {
+                                                                $user = Filament::auth()->user();
+                                                                return $user && $user->point_of_sale_id;
+                                                            })
+                                                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                            ->searchable(),
 
                                                         Forms\Components\CheckboxList::make('taxes')
                                                             ->label(__('Taxes'))
@@ -523,7 +640,7 @@ class OrderResource extends Resource
                                                 $product = \App\Models\Product::find($productId);
                                                 return $product ? __('Stock remaining: :quantity', ['quantity' => $product->quantity]) : null;
                                             })
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 self::calculateOrderItemValues($get, $set);
                                             })
@@ -534,7 +651,7 @@ class OrderResource extends Resource
                                             ->required()
                                             ->numeric()
                                             ->minValue(0)
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 self::calculateOrderItemValues($get, $set);
                                             })
@@ -547,7 +664,7 @@ class OrderResource extends Resource
                                             ->dehydrated(true)
                                             ->default(0)
                                             ->minValue(0)
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 self::calculateOrderItemValues($get, $set);
                                             })
@@ -558,7 +675,7 @@ class OrderResource extends Resource
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 // Mark as manually edited
                                                 $set('vat_amount_is_manual', true);
@@ -572,7 +689,7 @@ class OrderResource extends Resource
                                             ->numeric()
                                             ->dehydrated(true)
                                             ->default(0)
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 // Mark as manually edited
                                                 $set('other_taxes_amount_is_manual', true);
@@ -698,6 +815,12 @@ class OrderResource extends Resource
                                 // Right Column
                                 Forms\Components\Grid::make()
                                     ->schema([
+                                        Forms\Components\TextInput::make('discount')
+                                            ->label(__('Total Discount'))
+                                            ->numeric()
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('subtotal')
                                             ->label(__('Subtotal'))
                                             ->numeric()
@@ -712,12 +835,6 @@ class OrderResource extends Resource
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('other_taxes')
                                             ->label(__('Total Other Taxes'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                                        Forms\Components\TextInput::make('discount')
-                                            ->label(__('Total Discount'))
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
