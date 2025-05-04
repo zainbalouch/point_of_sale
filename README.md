@@ -1,7 +1,55 @@
-# Invoices Manager app
+# Invoices Manager
 
-TO DO
-Create Customer for order and invoice
+## System Setup Guide
+
+### Initial Configuration Process
+
+1. **Login as Super Admin**
+   - Use the super admin credentials to access the system
+
+2. **Configure System Settings**
+   - Navigate to Other Settings
+   - Add the following settings:
+     - `logo_dark`: Upload your dark mode logo
+     - `logo_light`: Upload your light mode logo
+     - `default_currency`: Set your default currency (e.g., SAR)
+     - Configure any other required settings
+
+3. **Create Point of Sale (POS)**
+   - Navigate to the POS section
+   - Create a new POS with required details
+
+4. **Create Company**
+   - Navigate to the Companies section
+   - Create a new company with all required details
+
+5. **Add POS to Company**
+   - Edit the created POS
+   - Assign it to the company you created
+
+6. **Create POS Role**
+   - Navigate to Roles & Permissions
+   - Create a new role for POS users with appropriate permissions
+
+7. **Create User for POS**
+   - Navigate to Users
+   - Create a new user
+   - Assign the user to:
+     - The company you created
+     - The POS you created
+     - The POS role you created
+
+8. **Provide Access to POS User**
+   - Share the email and password with the POS user
+   - The POS user can now:
+     - Add and manage products
+     - Process orders
+     - Handle invoices
+     - Manage their assigned point of sale
+
+---
+
+# Original Project Documentation
 
 I'm building a SAAS Laravel app as the following:
 The list of entities is:
