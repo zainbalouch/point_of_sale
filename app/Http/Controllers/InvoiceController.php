@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\InvoiceTemplateSetting;
 use App\Models\Order;
+use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Prgayman\Zatca\Facades\Zatca;
 use Salla\ZATCA\GenerateQrCode;
@@ -18,11 +19,9 @@ class InvoiceController extends Controller
         $noteSetting = InvoiceTemplateSetting::where('key_name', 'note')
             ->where('company_id', $order->company_id)
             ->first();
-        $logos = InvoiceTemplateSetting::where('key_name', 'logo')
-            ->where('company_id', $order->company_id)
-            ->first();
 
-        $logo = $logos['value_' . app()->getLocale()] ?? '';
+
+        $logo = Setting::get('logo_dark');
         if (!empty($logo)) {
             $dom = new \DOMDocument();
             $dom->loadHTML($logo, LIBXML_NOERROR);
@@ -62,12 +61,7 @@ class InvoiceController extends Controller
         $noteSetting = InvoiceTemplateSetting::where('key_name', 'note')
             ->where('company_id', $invoice->company_id)
             ->first();
-        $logos = InvoiceTemplateSetting::where('key_name', 'logo')
-            ->where('company_id', $invoice->company_id)
-            ->first();
-
-        $logo = $logos['value_' . app()->getLocale()] ?? '';
-
+        $logo = Setting::get('logo_dark');
         // Extract image URL from rich text content
         if (!empty($logo)) {
             $dom = new \DOMDocument();

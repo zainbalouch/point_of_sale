@@ -17,6 +17,8 @@
     "Customer": "عميل",
     "Invoices": "الفواتير",
     "Invoice": "فاتورة",
+    "Print Invoice": "طباعة الفاتورة",
+    "VAT Invoice": "فاتورة ضريبة",
     "Invoice items": "عناصر الفاتورة",
     "Invoice item": "عنصر فاتورة",
     "Orders": "الطلبات",

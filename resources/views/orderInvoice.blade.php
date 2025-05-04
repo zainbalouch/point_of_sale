@@ -63,13 +63,24 @@
         }
 
         .header {
+            min-width: 728px;
             position: fixed;
             top: 0;
         }
 
         .footer {
+            min-width: 728px;
             position: fixed;
             bottom: 0;
+        }
+
+        table{
+            min-width: 728px;
+        }
+
+        .logo{
+            width: 100px;
+            margin: 10px;
         }
     </style>
 </head>
@@ -309,7 +320,7 @@
         <header>
             <div class="row align-items-center gy-3">
                 <div class="col-7 text-center invoice-text-start">
-                    <img id="logo" class="w-25" src="{{ $logo }}" title="Koice" alt="Koice" />
+                    <img id="logo" class="logo" src="{{ asset('storage/'.$logo) }}" title="Koice" alt="Koice" />
                 </div>
                 <div class="col-5 text-center invoice-text-end">
                     <h4 class="text-7 mb-0">{{ __('Order') }}</h4>

@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->topNavigation()
             ->brandName('Estilo')
             ->unsavedChangesAlerts()
-            ->brandLogo(asset('assets/images/estilo_logo.png'))
+            ->brandLogo(asset('assets/images/start-dark-logo.jpg'))
             ->brandLogoHeight('3rem')
             ->colors([
                 'primary' => Color::Violet,
@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                
+
             ])
             ->plugins([
                 \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),

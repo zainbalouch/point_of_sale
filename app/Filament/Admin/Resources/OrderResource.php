@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\PaymentMethod;
 use App\Models\Setting;
+use Illuminate\Database\Eloquent\Collection;
 
 
 class OrderResource extends Resource
@@ -192,10 +193,46 @@ class OrderResource extends Resource
                                                     ->relationship('company', 'legal_name')
                                                     ->searchable()
                                                     ->preload()
+                                                    ->required()
                                                     ->default(function () {
                                                         $user = Filament::auth()->user();
+                                                        if ($user->point_of_sale_id) {
+                                                            return \App\Models\PointOfSale::find($user->point_of_sale_id)?->company_id;
+                                                        }
                                                         return $user && $user->company_id ? $user->company_id : null;
+                                                    })
+                                                    ->disabled(function () {
+                                                        $user = Filament::auth()->user();
+                                                        return $user->point_of_sale_id !== null;
+                                                    })
+                                                    ->dehydrated()
+                                                    ->live()
+                                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                        $set('point_of_sale_id', null);
                                                     }),
+
+                                                Forms\Components\Select::make('point_of_sale_id')
+                                                    ->label(__('Point of Sale'))
+                                                    ->relationship('pointOfSale', 'name_en')
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->options(function (Forms\Get $get) {
+                                                        $companyId = $get('company_id');
+                                                        if (!$companyId) {
+                                                            return [];
+                                                        }
+                                                        return \App\Models\PointOfSale::where('company_id', $companyId)
+                                                            ->pluck('name_en', 'id');
+                                                    })
+                                                    ->default(function () {
+                                                        $user = Filament::auth()->user();
+                                                        return $user->point_of_sale_id;
+                                                    })
+                                                    ->disabled(function () {
+                                                        $user = Filament::auth()->user();
+                                                        return $user->point_of_sale_id !== null;
+                                                    })
+                                                    ->dehydrated(),
 
                                                 Forms\Components\Toggle::make('is_active')
                                                     ->label(__('Active Status'))
@@ -211,6 +248,9 @@ class OrderResource extends Resource
                                 name: 'user',
                                 modifyQueryUsing: fn(Builder $query) => $query
                                     ->select(['id', 'first_name', 'last_name'])
+                                    ->when(Filament::auth()->user()->point_of_sale_id, function (Builder $query, $posId) {
+                                        return $query->where('point_of_sale_id', $posId);
+                                    })
                                     ->orderBy('first_name')
                             )
                             ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}")
@@ -274,9 +314,9 @@ class OrderResource extends Resource
                                             ['label' => __('Product'), 'span' => 2, 'padding' => 20],
                                             ['label' => __('Quantity'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Unit Price'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Discount'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('VAT'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Other Taxes'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Discount'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Total Price'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Note'), 'span' => 2, 'padding' => 20],
                                         ]
@@ -297,6 +337,8 @@ class OrderResource extends Resource
                                                 titleAttribute: 'name_en',
                                                 modifyQueryUsing: function (Builder $query) {
                                                     $user = Filament::auth()->user();
+                                                    $query->where('quantity', '>', 0);
+
                                                     if ($user->point_of_sale_id) {
                                                         return $query->where('point_of_sale_id', $user->point_of_sale_id);
                                                     } elseif ($user->company_id) {
@@ -448,24 +490,16 @@ class OrderResource extends Resource
                                                 $set('product_sku', $product->sku);
                                                 $set('unit_price', $product->price);
 
-                                                // Calculate vates
-                                                $vatAmount = $product->getVatAmount();
-                                                // Preserve decimals with exact precision
-                                                $set('vat_amount', number_format($vatAmount, 2, '.', ''));
+                                                // Initial tax rates - will be recalculated after discount
+                                                $vatRate = $product->getVatAmount() / $product->price;
+                                                $otherTaxesRate = $product->getOtherTaxesAmount() / $product->price;
 
-                                                // Calculate other taxes
-                                                $otherTaxesAmount = $product->getOtherTaxesAmount();
-                                                $set('other_taxes_amount', number_format($otherTaxesAmount, 2, '.', ''));
+                                                // Store the rates for later use
+                                                $set('vat_rate', $vatRate);
+                                                $set('other_taxes_rate', $otherTaxesRate);
 
-                                                // Calculate initial total price
-                                                $quantity = floatval($get('quantity') ?? 1);
-                                                $unitPrice = floatval($product->price);
-                                                $vatAmount = floatval($vatAmount);
-                                                $otherTaxesAmount = floatval($otherTaxesAmount);
-                                                $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
-
-                                                self::calculateOrderTotals($set, $get);
+                                                // Calculate item values and update the form
+                                                self::calculateOrderItemValues($get, $set);
                                             })
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('quantity')
@@ -491,14 +525,7 @@ class OrderResource extends Resource
                                             })
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $quantity = floatval($state ?? 1);
-                                                $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $vatAmount = floatval($get('vat_amount') ?? 0);
-                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
-                                                $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
-
-                                                self::calculateOrderTotals($set, $get);
+                                                self::calculateOrderItemValues($get, $set);
                                             })
                                             ->columnSpan(1),
                                         Forms\Components\TextInput::make('unit_price')
@@ -509,32 +536,33 @@ class OrderResource extends Resource
                                             ->minValue(0)
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $quantity = floatval($get('quantity') ?? 1);
-                                                $unitPrice = floatval($state ?? 0);
-                                                $vatAmount = floatval($get('vat_amount') ?? 0);
-                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
-                                                $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
-
-                                                self::calculateOrderTotals($set, $get);
+                                                self::calculateOrderItemValues($get, $set);
                                             })
                                             ->columnSpan(1),
+
+                                        Forms\Components\TextInput::make('discount_amount')
+                                             ->label(__('Discount'))
+                                            ->hiddenLabel()
+                                            ->numeric()
+                                            ->dehydrated(true)
+                                            ->default(0)
+                                            ->minValue(0)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                self::calculateOrderItemValues($get, $set);
+                                            })
+                                            ->columnSpan(1),
+
                                         Forms\Components\TextInput::make('vat_amount')
                                             ->label(__('VAT'))
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
-                                            ->step(0.1)
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $quantity = floatval($get('quantity') ?? 1);
-                                                $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $vatAmount = floatval($state ?? 0);
-                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
-                                                $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
-
-                                                self::calculateOrderTotals($set, $get);
+                                                // Mark as manually edited
+                                                $set('vat_amount_is_manual', true);
+                                                self::calculateOrderItemValues($get, $set);
                                             })
                                             ->columnSpan(1),
 
@@ -543,39 +571,12 @@ class OrderResource extends Resource
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
-                                            ->step(0.1)
                                             ->default(0)
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $quantity = floatval($get('quantity') ?? 1);
-                                                $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $vatAmount = floatval($get('vat_amount') ?? 0);
-                                                $otherTaxesAmount = floatval($state ?? 0);
-                                                $discountAmount = floatval($get('discount_amount') ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
-
-                                                self::calculateOrderTotals($set, $get);
-                                            })
-                                            ->columnSpan(1),
-
-                                        Forms\Components\TextInput::make('discount_amount')
-                                            ->label(__('Discount'))
-                                            ->hiddenLabel()
-                                            ->numeric()
-                                            ->dehydrated(true)
-                                            ->step(0.1)
-                                            ->default(0)
-                                            ->minValue(0)
-                                            ->live()
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $quantity = floatval($get('quantity') ?? 1);
-                                                $unitPrice = floatval($get('unit_price') ?? 0);
-                                                $vatAmount = floatval($get('vat_amount') ?? 0);
-                                                $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
-                                                $discountAmount = floatval($state ?? 0);
-                                                $set('total_price', number_format((($unitPrice + $vatAmount + $otherTaxesAmount) * $quantity) - $discountAmount, 2, '.', ''));
-
-                                                self::calculateOrderTotals($set, $get);
+                                                // Mark as manually edited
+                                                $set('other_taxes_amount_is_manual', true);
+                                                self::calculateOrderItemValues($get, $set);
                                             })
                                             ->columnSpan(1),
 
@@ -584,7 +585,6 @@ class OrderResource extends Resource
                                             ->hiddenLabel()
                                             ->required()
                                             ->numeric()
-                                            ->step(0.1)
                                             ->minValue(0)
                                             ->disabled()
                                             ->dehydrated()
@@ -609,6 +609,14 @@ class OrderResource extends Resource
                                     ->nullable(),
                                 Forms\Components\Hidden::make('product_sku')
                                     ->nullable(),
+                                Forms\Components\Hidden::make('vat_rate')
+                                    ->nullable(),
+                                Forms\Components\Hidden::make('other_taxes_rate')
+                                    ->nullable(),
+                                Forms\Components\Hidden::make('vat_amount_is_manual')
+                                    ->default(false),
+                                Forms\Components\Hidden::make('other_taxes_amount_is_manual')
+                                    ->default(false),
                             ])
                             ->defaultItems(1)
                             ->reorderable(false)
@@ -666,7 +674,6 @@ class OrderResource extends Resource
                                             ->numeric()
                                             ->required()
                                             ->minValue(0)
-                                            ->step(0.1)
                                             ->default(0)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
                                             ->live(onBlur: true)
@@ -682,7 +689,6 @@ class OrderResource extends Resource
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
-                                            ->step(0.1)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
                                             ->extraAttributes(['class' => 'text-danger-600 font-bold']),
                                     ])
@@ -697,35 +703,30 @@ class OrderResource extends Resource
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
-                                            ->step(0.1)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('vat')
                                             ->label(__('Total VAT Amount'))
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
-                                            ->step(0.1)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('other_taxes')
                                             ->label(__('Total Other Taxes'))
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
-                                            ->step(0.1)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('discount')
                                             ->label(__('Total Discount'))
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
-                                            ->step(0.1)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('total')
                                             ->label(__('Total'))
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
-                                            ->step(0.1)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
                                             ->extraAttributes(['class' => 'text-primary-600 font-bold']),
                                     ])
@@ -1007,41 +1008,40 @@ class OrderResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->visible(function (Order $record) {
-                        $user = Filament::auth()->user();
-                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
-                    }),
-                Tables\Actions\EditAction::make()
-                    ->visible(function (Order $record) {
-                        $user = Filament::auth()->user();
-                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
-                    }),
-                Tables\Actions\DeleteAction::make()
-                    ->visible(function (Order $record) {
-                        $user = Filament::auth()->user();
-                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
-                    }),
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
                 Tables\Actions\Action::make('printInvoice')
                     ->label(__('Print Invoice'))
                     ->icon('heroicon-o-printer')
                     ->url(fn($record) => route('order.invoice.show', $record))
                     ->extraAttributes([
                         'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
-                    ])
-                    ->visible(function (Order $record) {
-                        $user = Filament::auth()->user();
-                        return !$user->point_of_sale_id || $record->customer->point_of_sale_id === $user->point_of_sale_id;
-                    }),
+                    ]),
+                Tables\Actions\Action::make('forceDelete')
+                    ->label(__('Delete Permanently'))
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Permanently delete order'))
+                    ->modalDescription(__('Are you sure you want to permanently delete this order? This action cannot be undone.'))
+                    ->modalSubmitActionLabel(__('Yes, delete permanently'))
+                    ->action(fn (Order $record) => $record->forceDelete())
+                    ->visible(fn (Order $record): bool => $record->trashed()),
             ])
             ->actionsColumnLabel(__('Actions'))
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(function () {
-                            $user = Filament::auth()->user();
-                            return !$user->point_of_sale_id;
-                        }),
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('forceDelete')
+                        ->label(__('Delete Permanently'))
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Permanently delete selected orders'))
+                        ->modalDescription(__('Are you sure you want to permanently delete these orders? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, delete permanently'))
+                        ->action(fn (Collection $records) => $records->each->forceDelete())
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -1089,6 +1089,7 @@ class OrderResource extends Resource
         $vat = 0;
         $otherTaxes = 0;
         $totalDiscount = 0;
+
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
             $unitPrice = floatval($item['unit_price'] ?? 0);
@@ -1096,6 +1097,7 @@ class OrderResource extends Resource
             $otherTaxesAmount = floatval($item['other_taxes_amount'] ?? 0);
             $discountAmount = floatval($item['discount_amount'] ?? 0);
 
+            // Add to totals
             $subtotal += $unitPrice * $quantity;
             $vat += $vatAmount * $quantity;
             $otherTaxes += $otherTaxesAmount * $quantity;
@@ -1107,6 +1109,9 @@ class OrderResource extends Resource
         $set('../../vat', number_format($vat, 2, '.', ''));
         $set('../../other_taxes', number_format($otherTaxes, 2, '.', ''));
         $set('../../discount', number_format($totalDiscount, 2, '.', ''));
+
+        // Total is simply the sum of subtotal and taxes minus discount
+        // (taxes are already calculated on discounted prices at the item level)
         $total = $subtotal + $vat + $otherTaxes - $totalDiscount;
         $set('../../total', number_format($total, 2, '.', ''));
 
@@ -1123,6 +1128,7 @@ class OrderResource extends Resource
         $vat = 0;
         $otherTaxes = 0;
         $totalDiscount = 0;
+
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
             $unitPrice = floatval($item['unit_price'] ?? 0);
@@ -1130,6 +1136,7 @@ class OrderResource extends Resource
             $otherTaxesAmount = floatval($item['other_taxes_amount'] ?? 0);
             $discountAmount = floatval($item['discount_amount'] ?? 0);
 
+            // Add to totals
             $subtotal += $unitPrice * $quantity;
             $vat += $vatAmount * $quantity;
             $otherTaxes += $otherTaxesAmount * $quantity;
@@ -1140,9 +1147,8 @@ class OrderResource extends Resource
         $set('vat', number_format($vat, 2, '.', ''));
         $set('other_taxes', number_format($otherTaxes, 2, '.', ''));
         $set('discount', number_format($totalDiscount, 2, '.', ''));
-        $set('vat', number_format($vat, 2, '.', ''));
-        $set('other_taxes', number_format($otherTaxes, 2, '.', ''));
-        $set('discount', number_format($totalDiscount, 2, '.', ''));
+
+        // Total calculation (taxes are already calculated on discounted prices)
         $total = $subtotal + $vat + $otherTaxes - $totalDiscount;
         $set('total', number_format($total, 2, '.', ''));
 
@@ -1181,6 +1187,43 @@ class OrderResource extends Resource
         $set('sale_price', round($salePrice, 2));
     }
 
+    private static function calculateOrderItemValues(Forms\Get $get, Forms\Set $set): void
+    {
+        $quantity = floatval($get('quantity') ?? 1);
+        $unitPrice = floatval($get('unit_price') ?? 0);
+        $vatRate = floatval($get('vat_rate') ?? 0);
+        $otherTaxesRate = floatval($get('other_taxes_rate') ?? 0);
+        $discountAmount = floatval($get('discount_amount') ?? 0);
+
+        // Check if tax values were manually edited
+        $vatIsManual = $get('vat_amount_is_manual') === true;
+        $otherTaxesIsManual = $get('other_taxes_amount_is_manual') === true;
+
+        // Calculate discounted price per unit
+        $discountPerUnit = $discountAmount / $quantity;
+        $discountedUnitPrice = max(0, $unitPrice - $discountPerUnit);
+
+        // Only calculate VAT if not manually set
+        if (!$vatIsManual) {
+            $vatAmount = $discountedUnitPrice * $vatRate;
+            $set('vat_amount', number_format($vatAmount, 2, '.', ''));
+        }
+
+        // Only calculate Other Taxes if not manually set
+        if (!$otherTaxesIsManual) {
+            $otherTaxesAmount = $discountedUnitPrice * $otherTaxesRate;
+            $set('other_taxes_amount', number_format($otherTaxesAmount, 2, '.', ''));
+        }
+
+        // Calculate total using current values (whether calculated or manually entered)
+        $vatAmount = floatval($get('vat_amount') ?? 0);
+        $otherTaxesAmount = floatval($get('other_taxes_amount') ?? 0);
+        $totalPricePerUnit = $discountedUnitPrice + $vatAmount + $otherTaxesAmount;
+        $set('total_price', number_format($totalPricePerUnit * $quantity, 2, '.', ''));
+
+        self::calculateOrderTotals($set, $get);
+    }
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
@@ -1202,31 +1245,5 @@ class OrderResource extends Resource
 
         return $query;
     }
-    public static function canDelete(Model $record): bool
-    {
-        $user = Filament::auth()->user();
-        return $user->point_of_sale_id === null || $record->point_of_sale_id === $user->point_of_sale_id;
-    }
 
-    public static function canEdit(Model $record): bool
-    {
-        $user = Filament::auth()->user();
-        return $user->point_of_sale_id === null || $record->point_of_sale_id === $user->point_of_sale_id;
-    }
-
-    public static function canView(Model $record): bool
-    {
-        $user = Filament::auth()->user();
-        return $user->point_of_sale_id === null || $record->point_of_sale_id === $user->point_of_sale_id;
-    }
-
-    public static function canCreate(): bool
-    {
-        return true;
-    }
-
-    public static function canAccess(): bool
-    {
-        return true;
-    }
 }

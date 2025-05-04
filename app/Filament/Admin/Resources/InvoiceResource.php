@@ -109,15 +109,17 @@ class InvoiceResource extends Resource
                             ->options(function (Forms\Get $get) {
                                 $customerId = $get('customer_id');
                                 $query = \App\Models\Order::query()
-                                    ->select(['orders.id', 'orders.number', 'orders.total', 'orders.amount_paid', 'orders.customer_name'])
+                                    ->select(['orders.id', 'orders.number', 'orders.total', 'orders.amount_paid'])
                                     ->leftJoin('order_items', 'orders.id', '=', 'order_items.order_id')
-                                    ->selectRaw("CONCAT(orders.number, ' - ', orders.customer_name, ' (Total: ', orders.total, ', Paid: ', orders.amount_paid, ', Items: ', COUNT(DISTINCT order_items.id), ')') as display_text")
+                                    ->selectRaw("COALESCE(orders.customer_name, 'Customer') as customer_name")
+                                    ->selectRaw("CONCAT(COALESCE(orders.number, ''), ' - ', COALESCE(orders.customer_name, 'Customer'), ' (Total: ', COALESCE(orders.total, 0), ', Paid: ', COALESCE(orders.amount_paid, 0), ', Items: ', COUNT(DISTINCT order_items.id), ')') as display_text")
                                     ->groupBy('orders.id', 'orders.number', 'orders.total', 'orders.amount_paid', 'orders.customer_name');
 
                                 // If customer is selected, show only their orders
                                 if ($customerId) {
                                     return $query->where('customer_id', $customerId)
-                                        ->pluck('display_text', 'orders.id');
+                                        ->pluck('display_text', 'orders.id')
+                                        ->map(fn ($label) => $label ?: 'Order #' . $customerId);
                                 }
 
                                 // If no customer selected, filter by POS ID if user has one
@@ -128,7 +130,8 @@ class InvoiceResource extends Resource
                                     });
                                 }
 
-                                return $query->pluck('display_text', 'orders.id');
+                                return $query->pluck('display_text', 'orders.id')
+                                    ->map(fn ($label) => $label ?: 'Order');
                             })
                             ->searchable()
                             ->required()
@@ -215,12 +218,6 @@ class InvoiceResource extends Resource
                                 $total = $get('total') ?? 0;
                                 $amountPaid = $get('amount_paid') ?? 0;
                                 return $total != $amountPaid;
-                            })
-                            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
-                                $amount_paid = $get('amount_paid') ?? 0;
-                                $amountLeft = $state ?? 0;
-                                $newAmountPaid = $amount_paid + $amountLeft;
-                                $set('amount_paid', $newAmountPaid);
                             }),
                     ])
                     ->columns(2),

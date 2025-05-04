@@ -35,10 +35,6 @@ return new class extends Migration
         Schema::table('invoices', function (Blueprint $table) {
             // Remove new columns
             $table->dropColumn(['amount_paid', 'vat', 'other_taxes']);
-            $table->dropForeign(['point_of_sale_id']);
-            $table->dropColumn('point_of_sale_id');
-            $table->dropForeign(['order_id']);
-            $table->dropColumn('order_id');
             $table->string('customer_phone')->nullable(false)->change();
             $table->unsignedBigInteger('tax_amount');
 

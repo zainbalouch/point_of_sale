@@ -14,24 +14,29 @@ return new class extends Migration
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->string('number');
+            $table->foreignId('order_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('point_of_sale_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+            $table->foreignId('issued_by_user')->nullable()->constrained('users')->nullOnDelete();
             $table->string('customer_name');
             $table->string('customer_email');
-            $table->string('customer_phone');
-            $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('customer_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('billing_address_id')->nullable()->constrained('addresses')->nullOnDelete();
-            $table->foreignId('shipping_address_id')->nullable()->constrained('addresses')->nullOnDelete();
+            $table->string('customer_phone')->nullable();
             $table->unsignedBigInteger('subtotal');
-            $table->unsignedBigInteger('tax_amount');
-            $table->unsignedBigInteger('discount_amount')->default(0);
-            $table->unsignedBigInteger('total_amount');
-            $table->datetime('issue_date');
+            $table->unsignedBigInteger('discount')->default(0);
+            $table->decimal('vat', 10, 2)->nullable();
+            $table->decimal('other_taxes', 10, 2)->nullable();
+            $table->unsignedBigInteger('total');
+            $table->decimal('amount_paid', 10, 2)->nullable()->default(0);
             $table->datetime('due_date')->nullable();
             $table->datetime('paid_date')->nullable();
+            $table->datetime('issue_date');
+            $table->json('meta')->nullable(); // For extensibility
+            $table->foreignId('billing_address_id')->nullable()->constrained('addresses')->nullOnDelete();
+            $table->foreignId('shipping_address_id')->nullable()->constrained('addresses')->nullOnDelete();
             $table->foreignId('invoice_status_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('currency_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('issued_by_user')->nullable()->constrained('users')->nullOnDelete();
-            $table->json('meta')->nullable(); // For extensibility
+
             $table->timestamps();
             $table->softDeletes();
         });

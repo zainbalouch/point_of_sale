@@ -32,4 +32,12 @@ class CreateInvoice extends CreateRecord
         // Otherwise, let Filament handle the creation
         return parent::handleRecordCreation($data);
     }
+
+    protected function getRedirectUrl(): string
+    {
+        // Store the created invoice ID in a one-time session variable
+        session()->flash('created_invoice_id', $this->record->id);
+        // Redirect to the index page
+        return $this->getResource()::getUrl('index');
+    }
 }
