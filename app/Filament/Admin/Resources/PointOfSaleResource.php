@@ -28,6 +28,14 @@ class PointOfSaleResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('Basic information'))
                     ->schema([
+                        Forms\Components\Select::make('company_id')
+                            ->label(__('Company'))
+                            ->relationship('company', 'legal_name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->columnSpan(['sm' => 2]),
+
                         Forms\Components\TextInput::make('name_en')
                             ->label(__('Name (English)'))
                             ->required()

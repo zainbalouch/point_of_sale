@@ -21,6 +21,7 @@ class Product extends Model
         'sku',
         'code',
         'price',
+        'quantity',
         'sale_price',
         'currency_id',
         'product_category_id',

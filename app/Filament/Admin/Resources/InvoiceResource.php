@@ -28,10 +28,24 @@ class InvoiceResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        // Apply filtering based on user
+        $user = Filament::auth()->user();
+
+        // If user has a point_of_sale_id, they can only see invoices from their POS
+        if ($user && $user->point_of_sale_id) {
+            $query->where('point_of_sale_id', $user->point_of_sale_id);
+        }
+        // If user has a company_id but no point_of_sale_id, they can see all invoices from their company
+        elseif ($user && $user->company_id) {
+            $query->where('company_id', $user->company_id);
+        }
+
+        return $query;
     }
 
     public static function form(Form $form): Form

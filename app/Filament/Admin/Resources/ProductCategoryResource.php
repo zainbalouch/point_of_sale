@@ -112,8 +112,66 @@ class ProductCategoryResource extends Resource
                             ->preload()
                             ->default(function () {
                                 $user = Filament::auth()->user();
-                                return $user && $user->company_id ? $user->company_id : null;
-                            }),
+
+                                // If user has company_id, use it
+                                if ($user && $user->company_id) {
+                                    return $user->company_id;
+                                }
+
+                                // If user has point_of_sale_id but no company_id, get company from point of sale
+                                if ($user && $user->point_of_sale_id) {
+                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                    if ($pointOfSale) {
+                                        return $pointOfSale->company_id;
+                                    }
+                                }
+
+                                return null;
+                            })
+                            ->disabled(function () {
+                                $user = Filament::auth()->user();
+                                // Make disabled if user has company_id or point_of_sale_id
+                                return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
+                            })
+                            ->dehydrated(true)
+                            ->live()
+                            ->afterStateUpdated(fn(Forms\Set $set) => $set('point_of_sale_id', null)),
+
+                        Forms\Components\Select::make('point_of_sale_id')
+                            ->label(__('Point of Sale'))
+                            ->options(function (Forms\Get $get) {
+                                $companyId = $get('company_id');
+                                if (!$companyId) {
+                                    // If user has a point_of_sale_id but no company_id is selected yet,
+                                    // we need to get the company_id from the user's point of sale
+                                    $user = Filament::auth()->user();
+                                    if ($user && $user->point_of_sale_id) {
+                                        $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                        if ($pointOfSale) {
+                                            return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                ->pluck('name_en', 'id');
+                                        }
+                                    }
+                                    return [];
+                                }
+
+                                return \App\Models\PointOfSale::where('company_id', $companyId)
+                                    ->where('is_active', true)
+                                    ->pluck('name_en', 'id');
+                            })
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
+                            })
+                            ->disabled(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->point_of_sale_id;
+                            })
+                            ->dehydrated(true)
+                            ->searchable()
+                            ->nullable()
+                            ->placeholder(__('Select Point of Sale'))
+                            ->helperText(__('Optional: Associate this category with a specific point of sale')),
                     ])
                     ->columns(1),
             ]);
@@ -138,6 +196,17 @@ class ProductCategoryResource extends Resource
                 Tables\Columns\TextColumn::make("parentCategory.name_{$currentLocale}")
                     ->label(__('Parent category'))
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('company.legal_name')
+                    ->label(__('Company'))
+                    ->sortable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('pointOfSale.name_en')
+                    ->label(__('Point of Sale'))
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('breadcrumbs')
                     ->label(__('Breadcrumbs'))
@@ -181,6 +250,17 @@ class ProductCategoryResource extends Resource
                     ->relationship('parentCategory', "name_{$currentLocale}")
                     ->searchable()
                     ->preload(),
+
+                Tables\Filters\SelectFilter::make('company_id')
+                    ->label(__('Company'))
+                    ->relationship('company', 'legal_name')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\SelectFilter::make('point_of_sale_id')
+                    ->label(__('Point of Sale'))
+                    ->relationship('pointOfSale', 'name_en')
+                    ->searchable()
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -215,10 +295,24 @@ class ProductCategoryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        // Apply filtering based on user
+        $user = Filament::auth()->user();
+
+        // If user has a point_of_sale_id, they can only see categories from their POS
+        if ($user && $user->point_of_sale_id) {
+            $query->where('point_of_sale_id', $user->point_of_sale_id);
+        }
+        // If user has a company_id but no point_of_sale_id, they can see all categories from their company
+        elseif ($user && $user->company_id) {
+            $query->where('company_id', $user->company_id);
+        }
+
+        return $query;
     }
 
     public static function getGlobalSearchResultTitle(Model $record): string

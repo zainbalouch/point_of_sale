@@ -20,6 +20,8 @@ class ProductCategory extends Model
         'slug',
         'parent_id',
         'company_id',
+        'point_of_sale_id',
+
     ];
 
     protected $appends = ['name', 'description'];
@@ -81,6 +83,11 @@ class ProductCategory extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function pointOfSale()
+    {
+        return $this->belongsTo(PointOfSale::class);
     }
 
     public function getActivitylogOptions(): LogOptions

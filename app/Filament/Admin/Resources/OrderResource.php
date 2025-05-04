@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\PaymentMethod;
+use App\Models\Setting;
+
 
 class OrderResource extends Resource
 {
@@ -100,6 +103,15 @@ class OrderResource extends Resource
                             ->label(__('Customer'))
                             ->required()
                             ->live()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                $query = \App\Models\Customer::query();
+
+                                if ($user->point_of_sale_id) {
+                                    $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                }
+                                return $query->first()?->id;
+                            })
                             ->afterStateHydrated(function ($state, Forms\Set $set) {
                                 if (!$state) return;
 
@@ -280,7 +292,19 @@ class OrderResource extends Resource
                                 Forms\Components\Grid::make()
                                     ->schema([
                                         Forms\Components\Select::make('product_id')
-                                            ->relationship('product', 'name_en')
+                                            ->relationship(
+                                                name: 'product',
+                                                titleAttribute: 'name_en',
+                                                modifyQueryUsing: function (Builder $query) {
+                                                    $user = Filament::auth()->user();
+                                                    if ($user->point_of_sale_id) {
+                                                        return $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                                    } elseif ($user->company_id) {
+                                                        return $query->where('company_id', $user->company_id);
+                                                    }
+                                                    return $query;
+                                                }
+                                            )
                                             ->label(__('Product'))
                                             ->hiddenLabel()
                                             ->required()
@@ -451,6 +475,20 @@ class OrderResource extends Resource
                                             ->numeric()
                                             ->default(1)
                                             ->minValue(1)
+                                            ->maxValue(function (Forms\Get $get) {
+                                                $productId = $get('product_id');
+                                                if (!$productId) return null;
+
+                                                $product = \App\Models\Product::find($productId);
+                                                return $product ? $product->quantity : null;
+                                            })
+                                            ->helperText(function (Forms\Get $get) {
+                                                $productId = $get('product_id');
+                                                if (!$productId) return null;
+
+                                                $product = \App\Models\Product::find($productId);
+                                                return $product ? __('Stock remaining: :quantity', ['quantity' => $product->quantity]) : null;
+                                            })
                                             ->live()
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 $quantity = floatval($state ?? 1);
@@ -611,11 +649,15 @@ class OrderResource extends Resource
                                             ->label(__('Payment Method'))
                                             ->required()
                                             ->searchable()
+                                            ->default(fn() => PaymentMethod::where('name_en', Setting::get('default_payment_methode'))->first()?->id)
                                             ->preload(),
                                         Forms\Components\Select::make('currency_id')
                                             ->relationship('currency', 'code')
                                             ->label(__('Currency'))
                                             ->required()
+                                            ->default(function () {
+                                                return Currency::where('code', Setting::get('default_currency'))->first()?->id;
+                                            })
                                             ->searchable()
                                             ->preload()
                                             ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
@@ -983,7 +1025,7 @@ class OrderResource extends Resource
                 Tables\Actions\Action::make('printInvoice')
                     ->label(__('Print Invoice'))
                     ->icon('heroicon-o-printer')
-                    ->url(fn ($record) => route('order.invoice.show', $record))
+                    ->url(fn($record) => route('order.invoice.show', $record))
                     ->extraAttributes([
                         'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
                     ])
@@ -1146,13 +1188,20 @@ class OrderResource extends Resource
                 SoftDeletingScope::class,
             ]);
 
+        // Apply filtering based on user
         $user = Filament::auth()->user();
-        if ($user->point_of_sale_id) {
-            return $query->where('point_of_sale_id', $user->point_of_sale_id);
+
+        // If user has a point_of_sale_id, they can only see orders from their POS
+        if ($user && $user->point_of_sale_id) {
+            $query->where('point_of_sale_id', $user->point_of_sale_id);
         }
+        // If user has a company_id but no point_of_sale_id, they can see all orders from their company
+        elseif ($user && $user->company_id) {
+            $query->where('company_id', $user->company_id);
+        }
+
         return $query;
     }
-
     public static function canDelete(Model $record): bool
     {
         $user = Filament::auth()->user();

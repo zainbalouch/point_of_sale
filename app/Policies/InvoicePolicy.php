@@ -15,6 +15,8 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('view_any_invoice');
     }
 
@@ -23,7 +25,23 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $invoice): bool
     {
-        return $user->can('view_invoice');
+        // Check basic permission
+        if (!$user->can('view_invoice')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only view invoices from their POS
+        if ($user->point_of_sale_id) {
+            return $invoice->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only view invoices from their company
+        if ($user->company_id) {
+            return $invoice->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -39,7 +57,23 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $invoice): bool
     {
-        return $user->can('update_invoice');
+        // Check basic permission
+        if (!$user->can('update_invoice')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only update invoices from their POS
+        if ($user->point_of_sale_id) {
+            return $invoice->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only update invoices from their company
+        if ($user->company_id) {
+            return $invoice->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -47,7 +81,23 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $invoice): bool
     {
-        return $user->can('delete_invoice');
+        // Check basic permission
+        if (!$user->can('delete_invoice')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only delete invoices from their POS
+        if ($user->point_of_sale_id) {
+            return $invoice->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only delete invoices from their company
+        if ($user->company_id) {
+            return $invoice->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -55,6 +105,8 @@ class InvoicePolicy
      */
     public function deleteAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('delete_any_invoice');
     }
 
@@ -63,7 +115,23 @@ class InvoicePolicy
      */
     public function forceDelete(User $user, Invoice $invoice): bool
     {
-        return $user->can('force_delete_invoice');
+        // Check basic permission
+        if (!$user->can('force_delete_invoice')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only force delete invoices from their POS
+        if ($user->point_of_sale_id) {
+            return $invoice->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only force delete invoices from their company
+        if ($user->company_id) {
+            return $invoice->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -71,6 +139,8 @@ class InvoicePolicy
      */
     public function forceDeleteAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('force_delete_any_invoice');
     }
 
@@ -79,7 +149,23 @@ class InvoicePolicy
      */
     public function restore(User $user, Invoice $invoice): bool
     {
-        return $user->can('restore_invoice');
+        // Check basic permission
+        if (!$user->can('restore_invoice')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only restore invoices from their POS
+        if ($user->point_of_sale_id) {
+            return $invoice->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only restore invoices from their company
+        if ($user->company_id) {
+            return $invoice->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -87,6 +173,8 @@ class InvoicePolicy
      */
     public function restoreAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('restore_any_invoice');
     }
 
@@ -95,7 +183,23 @@ class InvoicePolicy
      */
     public function replicate(User $user, Invoice $invoice): bool
     {
-        return $user->can('replicate_invoice');
+        // Check basic permission
+        if (!$user->can('replicate_invoice')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only replicate invoices from their POS
+        if ($user->point_of_sale_id) {
+            return $invoice->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only replicate invoices from their company
+        if ($user->company_id) {
+            return $invoice->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**

@@ -15,6 +15,8 @@ class CustomerPolicy
      */
     public function viewAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('view_any_customer');
     }
 
@@ -23,7 +25,23 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer): bool
     {
-        return $user->can('view_customer');
+        // Check basic permission
+        if (!$user->can('view_customer')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only view customers from their POS
+        if ($user->point_of_sale_id) {
+            return $customer->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only view customers from their company
+        if ($user->company_id) {
+            return $customer->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -39,7 +57,23 @@ class CustomerPolicy
      */
     public function update(User $user, Customer $customer): bool
     {
-        return $user->can('update_customer');
+        // Check basic permission
+        if (!$user->can('update_customer')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only update customers from their POS
+        if ($user->point_of_sale_id) {
+            return $customer->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only update customers from their company
+        if ($user->company_id) {
+            return $customer->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -47,7 +81,23 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer): bool
     {
-        return $user->can('delete_customer');
+        // Check basic permission
+        if (!$user->can('delete_customer')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only delete customers from their POS
+        if ($user->point_of_sale_id) {
+            return $customer->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only delete customers from their company
+        if ($user->company_id) {
+            return $customer->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -55,6 +105,8 @@ class CustomerPolicy
      */
     public function deleteAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('delete_any_customer');
     }
 
@@ -63,7 +115,23 @@ class CustomerPolicy
      */
     public function forceDelete(User $user, Customer $customer): bool
     {
-        return $user->can('force_delete_customer');
+        // Check basic permission
+        if (!$user->can('force_delete_customer')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only force delete customers from their POS
+        if ($user->point_of_sale_id) {
+            return $customer->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only force delete customers from their company
+        if ($user->company_id) {
+            return $customer->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -71,6 +139,8 @@ class CustomerPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('force_delete_any_customer');
     }
 
@@ -79,7 +149,23 @@ class CustomerPolicy
      */
     public function restore(User $user, Customer $customer): bool
     {
-        return $user->can('restore_customer');
+        // Check basic permission
+        if (!$user->can('restore_customer')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only restore customers from their POS
+        if ($user->point_of_sale_id) {
+            return $customer->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only restore customers from their company
+        if ($user->company_id) {
+            return $customer->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**
@@ -87,6 +173,8 @@ class CustomerPolicy
      */
     public function restoreAny(User $user): bool
     {
+        // The basic permission check
+        // Actual filtering by company/POS is done in getEloquentQuery in the Resource class
         return $user->can('restore_any_customer');
     }
 
@@ -95,7 +183,23 @@ class CustomerPolicy
      */
     public function replicate(User $user, Customer $customer): bool
     {
-        return $user->can('replicate_customer');
+        // Check basic permission
+        if (!$user->can('replicate_customer')) {
+            return false;
+        }
+
+        // If user has point_of_sale_id, they can only replicate customers from their POS
+        if ($user->point_of_sale_id) {
+            return $customer->point_of_sale_id === $user->point_of_sale_id;
+        }
+
+        // If user has company_id, they can only replicate customers from their company
+        if ($user->company_id) {
+            return $customer->company_id === $user->company_id;
+        }
+
+        // Super admin or other users with the permission but no restrictions
+        return true;
     }
 
     /**

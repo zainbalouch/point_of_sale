@@ -24,6 +24,8 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Setting;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProductResource extends Resource
 {
@@ -95,12 +97,28 @@ class ProductResource extends Resource
                             ->preload()
                             ->default(function () {
                                 $user = Filament::auth()->user();
-                                return $user && $user->company_id ? $user->company_id : null;
+
+                                // If user has company_id, use it
+                                if ($user && $user->company_id) {
+                                    return $user->company_id;
+                                }
+
+                                // If user has point_of_sale_id but no company_id, get company from point of sale
+                                if ($user && $user->point_of_sale_id) {
+                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                    if ($pointOfSale) {
+                                        return $pointOfSale->company_id;
+                                    }
+                                }
+
+                                return null;
                             })
                             ->disabled(function () {
                                 $user = Filament::auth()->user();
-                                return $user && $user->company_id !== null;
+                                // Make disabled if user has company_id or point_of_sale_id
+                                return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
                             })
+                            ->dehydrated(true) // Ensure the value is submitted when disabled
                             ->live()
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
                                 $set('point_of_sale_id', null);
@@ -108,18 +126,37 @@ class ProductResource extends Resource
 
                         Forms\Components\Select::make('point_of_sale_id')
                             ->label(__('Point of Sale'))
-                            ->relationship('pointOfSale', 'name_en')
-                            ->required()
-                            ->searchable()
-                            ->preload()
                             ->options(function (Forms\Get $get) {
                                 $companyId = $get('company_id');
                                 if (!$companyId) {
+                                    // If user has a point_of_sale_id but no company_id is selected yet,
+                                    // we need to get the company_id from the user's point of sale
+                                    $user = Filament::auth()->user();
+                                    if ($user && $user->point_of_sale_id) {
+                                        $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                        if ($pointOfSale) {
+                                            return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                ->pluck('name_en', 'id');
+                                        }
+                                    }
                                     return [];
                                 }
+
                                 return \App\Models\PointOfSale::where('company_id', $companyId)
+                                    ->where('is_active', true)
                                     ->pluck('name_en', 'id');
-                            }),
+                            })
+                            ->required()
+                            ->default(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
+                            })
+                            ->disabled(function () {
+                                $user = Filament::auth()->user();
+                                return $user && $user->point_of_sale_id;
+                            })
+                            ->dehydrated(true) // Ensure the value is submitted when disabled
+                            ->searchable(),
                     ]),
 
                 Section::make(__('Pricing & Media'))
@@ -145,18 +182,44 @@ class ProductResource extends Resource
                             ->storeFileNamesIn('original_filename')
                             ->preserveFilenames(),
 
-                        Select::make('product_category_id')
+                            Select::make('product_category_id')
                             ->label(__('Product Category'))
-                            ->relationship(
-                                'category',
-                                'name_' . app()->getLocale()
-                            )
-                            ->getOptionLabelFromRecordUsing(
-                                fn(ProductCategory $record): string =>
-                                collect(array_reverse($record->buildBreadcrumbs($record->id)))
+                            ->options(function (Forms\Get $get) {
+                                // Get selected company and point of sale
+                                $companyId = $get('company_id');
+                                $posId = $get('point_of_sale_id');
+
+                                if (!$companyId) {
+                                    return [];
+                                }
+
+                                $query = ProductCategory::query();
+
+                                // If point of sale is selected, show only categories from that POS
+                                if ($posId) {
+                                    $query->where('point_of_sale_id', $posId);
+                                }
+                                // Otherwise show all categories from the company
+                                else {
+                                    $query->where('company_id', $companyId)
+                                          ->where(function ($query) {
+                                              $query->whereNull('point_of_sale_id')
+                                                    ->orWhereNotNull('point_of_sale_id');
+                                          });
+                                }
+
+                                $categories = $query->get();
+
+                                // Format the categories with breadcrumbs
+                                return $categories->mapWithKeys(function ($category) {
+                                    $breadcrumbs = array_reverse($category->buildBreadcrumbs($category->id));
+                                    $label = collect($breadcrumbs)
                                     ->pluck('name')
-                                    ->join(' > ')
-                            )
+                                        ->join(' > ');
+
+                                    return [$category->id => $label];
+                                })->toArray();
+                            })
                             ->required()
                             ->searchable()
                             ->preload()
@@ -255,7 +318,7 @@ class ProductResource extends Resource
                             ->searchable()
                             ->preload()
                             ->default(function () {
-                                return Currency::where('code', 'SAR')->first()?->id;
+                                return Currency::where('code', Setting::get('default_currency') ?? 'SAR')->first()?->id;
                             }),
 
                         TextInput::make('price')
@@ -266,6 +329,14 @@ class ProductResource extends Resource
                             ->step(0.01)
                             ->live(debounce: 500)
                             ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+
+                        TextInput::make('quantity')
+                            ->label(__('Stock Quantity'))
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->step(1)
+                            ->required(),
 
                         CheckboxList::make('taxes')
                             ->label(__('Taxes'))
@@ -349,6 +420,10 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Unit Price'))
                     ->money(fn($record) => $record->currency ? $record->currency->code : 'USD')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('quantity')
+                    ->label(__('Stock'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('taxes_list')
@@ -442,6 +517,28 @@ class ProductResource extends Resource
     public static function getNavigationGroup(): string
     {
         return __('Manage products');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
+
+        // Apply filtering based on user
+        $user = Filament::auth()->user();
+
+        // If user has a point_of_sale_id, they can only see products from their POS
+        if ($user && $user->point_of_sale_id) {
+            $query->where('point_of_sale_id', $user->point_of_sale_id);
+        }
+        // If user has a company_id but no point_of_sale_id, they can see all products from their company
+        elseif ($user && $user->company_id) {
+            $query->where('company_id', $user->company_id);
+        }
+
+        return $query;
     }
 
     protected static function calculateSalePrice(Forms\Set $set, Forms\Get $get): void
