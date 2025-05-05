@@ -355,7 +355,7 @@ class OrderResource extends Resource
                                             ['label' => __('Product'), 'span' => 2, 'padding' => 20],
                                             ['label' => __('Quantity'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Unit Price'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Discount'), 'span' => 1, 'padding' => 10],
+                                            ['label' => __('Discount'), 'span' => 2, 'padding' => 20],
                                             ['label' => __('VAT'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Other Taxes'), 'span' => 1, 'padding' => 10],
                                             ['label' => __('Total Price'), 'span' => 1, 'padding' => 10],
@@ -626,20 +626,20 @@ class OrderResource extends Resource
                                             ->numeric()
                                             ->default(1)
                                             ->minValue(1)
-                                            ->maxValue(function (Forms\Get $get) {
-                                                $productId = $get('product_id');
-                                                if (!$productId) return null;
+                                            // ->maxValue(function (Forms\Get $get) {
+                                            //     $productId = $get('product_id');
+                                            //     if (!$productId) return null;
 
-                                                $product = \App\Models\Product::find($productId);
-                                                return $product ? $product->quantity : null;
-                                            })
-                                            ->helperText(function (Forms\Get $get) {
-                                                $productId = $get('product_id');
-                                                if (!$productId) return null;
+                                            //     $product = \App\Models\Product::find($productId);
+                                            //     return $product ? $product->quantity : null;
+                                            // })
+                                            // ->helperText(function (Forms\Get $get) {
+                                            //     $productId = $get('product_id');
+                                            //     if (!$productId) return null;
 
-                                                $product = \App\Models\Product::find($productId);
-                                                return $product ? __('Stock remaining: :quantity', ['quantity' => $product->quantity]) : null;
-                                            })
+                                            //     $product = \App\Models\Product::find($productId);
+                                            //     return $product ? __('Stock remaining: :quantity', ['quantity' => $product->quantity]) : null;
+                                            // })
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 self::calculateOrderItemValues($get, $set);
@@ -658,17 +658,41 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
 
                                         Forms\Components\TextInput::make('discount_amount')
-                                             ->label(__('Discount'))
+                                            ->label(__('Discount'))
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
                                             ->default(0)
                                             ->minValue(0)
                                             ->live(onBlur: true)
+                                            ->prefix(fn (Forms\Get $get) => $get('discount_type') === 'percentage' ? '%' : Setting::get('default_currency') ?? 'SAR')
+                                            ->suffixAction(
+                                                Forms\Components\Actions\Action::make('changeDiscountType')
+                                                    ->icon('heroicon-o-cog')
+                                                    ->tooltip(fn (Forms\Get $get) => $get('discount_type') === 'fixed'
+                                                        ? __('Switch to percentage discount (%)')
+                                                        : __('Switch to fixed amount discount ($)'))
+                                                    ->action(function (Forms\Set $set, Forms\Get $get) {
+                                                        // Toggle between fixed and percentage
+                                                        $currentType = $get('discount_type');
+                                                        $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
+                                                        $set('discount_type', $newType);
+
+                                                        // Explicitly trigger calculation
+                                                        self::calculateOrderItemValues($get, $set);
+                                                    })
+                                            )
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 self::calculateOrderItemValues($get, $set);
                                             })
-                                            ->columnSpan(1),
+                                            ->columnSpan(2),
+                                        Forms\Components\Hidden::make('discount_type')
+                                            ->default('fixed')
+                                            ->dehydrated(true)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                                                self::calculateOrderItemValues($get, $set);
+                                            }),
 
                                         Forms\Components\TextInput::make('vat_amount')
                                             ->label(__('VAT'))
@@ -715,7 +739,7 @@ class OrderResource extends Resource
                                             ->dehydrated(true)
                                             ->columnSpan(2),
                                     ])
-                                    ->columns(10),
+                                    ->columns(11),
                                 Forms\Components\Hidden::make('product_name_en')
                                     ->nullable(),
                                 Forms\Components\Hidden::make('product_name_ar')
@@ -815,18 +839,53 @@ class OrderResource extends Resource
                                 // Right Column
                                 Forms\Components\Grid::make()
                                     ->schema([
-                                        Forms\Components\TextInput::make('discount')
-                                            ->label(__('Total Discount'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('subtotal')
                                             ->label(__('Subtotal'))
                                             ->numeric()
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                        Forms\Components\TextInput::make('discount')
+                                            ->label(__('Total Discount'))
+                                            ->numeric()
+                                            ->dehydrated(true)
+                                            ->prefix(fn($get) => $get('order_discount_type') === 'percentage' ? '%' : ($get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''))
+                                            ->suffixAction(
+                                                Forms\Components\Actions\Action::make('changeOrderDiscountType')
+                                                    ->icon('heroicon-o-cog')
+                                                    ->tooltip(fn (Forms\Get $get) => $get('order_discount_type') === 'fixed'
+                                                        ? __('Switch to percentage discount (%)')
+                                                        : __('Switch to fixed amount discount ($)'))
+                                                    ->action(function (Forms\Set $set, Forms\Get $get) {
+                                                        // Toggle between fixed and percentage
+                                                        $currentType = $get('order_discount_type');
+                                                        $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
+                                                        $set('order_discount_type', $newType);
+
+                                                        // Mark as manually set
+                                                        $set('discount_manually_set', true);
+
+                                                        // Recalculate totals
+                                                        self::recalculateOrderTotals($set, $get);
+                                                    })
+                                            )
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                                // Mark as manually set
+                                                $set('discount_manually_set', true);
+
+                                                self::recalculateOrderTotals($set, $get);
+                                            }),
+                                        Forms\Components\Hidden::make('discount_manually_set')
+                                            ->default(false)
+                                            ->dehydrated(true),
+                                        Forms\Components\Hidden::make('order_discount_type')
+                                            ->default('fixed')
+                                            ->dehydrated(true)
+                                            ->live()
+                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                                                self::recalculateOrderTotals($set, $get);
+                                            }),
                                         Forms\Components\TextInput::make('vat')
                                             ->label(__('Total VAT Amount'))
                                             ->numeric()
@@ -1203,9 +1262,10 @@ class OrderResource extends Resource
         // Get items from state
         $items = $get('../../items') ?? [];
         $subtotal = 0;
-        $vat = 0;
+        $itemVat = 0;  // This is the VAT calculated at item level
+        $itemDiscountedSubtotal = 0; // Track the discounted subtotal at item level
         $otherTaxes = 0;
-        $totalDiscount = 0;
+        $itemsDiscount = 0;
 
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
@@ -1213,23 +1273,68 @@ class OrderResource extends Resource
             $vatAmount = floatval($item['vat_amount'] ?? 0);
             $otherTaxesAmount = floatval($item['other_taxes_amount'] ?? 0);
             $discountAmount = floatval($item['discount_amount'] ?? 0);
+            $discountType = $item['discount_type'] ?? 'fixed';
+
+            // Calculate discount based on type
+            $itemDiscount = $discountAmount;
+            if ($discountType === 'percentage') {
+                $itemDiscount = ($unitPrice * $quantity) * ($discountAmount / 100);
+            }
+
+            // Calculate item's discounted amount
+            $itemLineTotal = $unitPrice * $quantity;
+            $itemDiscountedTotal = max(0, $itemLineTotal - $itemDiscount);
 
             // Add to totals
-            $subtotal += $unitPrice * $quantity;
-            $vat += $vatAmount * $quantity;
+            $subtotal += $itemLineTotal;
+            $itemVat += $vatAmount * $quantity;
+            $itemDiscountedSubtotal += $itemDiscountedTotal;
             $otherTaxes += $otherTaxesAmount * $quantity;
-            $totalDiscount += $discountAmount;
+            $itemsDiscount += $itemDiscount;
         }
 
-        // Use the parent form context to set the order total values
+        // Always update subtotal and other taxes from item calculations
         $set('../../subtotal', number_format($subtotal, 2, '.', ''));
-        $set('../../vat', number_format($vat, 2, '.', ''));
         $set('../../other_taxes', number_format($otherTaxes, 2, '.', ''));
-        $set('../../discount', number_format($totalDiscount, 2, '.', ''));
 
-        // Total is simply the sum of subtotal and taxes minus discount
-        // (taxes are already calculated on discounted prices at the item level)
-        $total = $subtotal + $vat + $otherTaxes - $totalDiscount;
+        // Flag to check if we're coming from an item update
+        $fromItemUpdate = true;
+
+        // Check if the call originates from a specific item update
+        if ($get('unit_price') !== null || $get('quantity') !== null || $get('discount_amount') !== null) {
+            // Called from item update
+            // If no order-level discount was manually set, update the total discount
+            if (!$get('../../discount_manually_set')) {
+                $set('../../discount', number_format($itemsDiscount, 2, '.', ''));
+            }
+        } else {
+            // Not called from item update
+            $fromItemUpdate = false;
+        }
+
+        // Get current order discount
+        $orderDiscountValue = floatval($get('../../discount') ?? 0);
+        $orderDiscountType = $get('../../order_discount_type') ?? 'fixed';
+        $orderDiscountAmount = $orderDiscountValue;
+
+        if ($orderDiscountType === 'percentage') {
+            $orderDiscountAmount = $subtotal * ($orderDiscountValue / 100);
+        }
+
+        // Calculate the discounted subtotal
+        $discountedSubtotal = $subtotal - $orderDiscountAmount;
+
+        // Calculate the effective VAT rate based on the already-discounted amounts at item level
+        $vatRate = $itemDiscountedSubtotal > 0 ? $itemVat / $itemDiscountedSubtotal : 0;
+
+        // Recalculate VAT based on the order-level discounted subtotal
+        $recalculatedVat = $discountedSubtotal * $vatRate;
+
+        // Update the VAT value
+        $set('../../vat', number_format($recalculatedVat, 2, '.', ''));
+
+        // Total is sum of discounted subtotal, recalculated VAT, and other taxes
+        $total = $discountedSubtotal + $recalculatedVat + $otherTaxes;
         $set('../../total', number_format($total, 2, '.', ''));
 
         // Update balance left
@@ -1242,9 +1347,10 @@ class OrderResource extends Resource
     {
         $items = $get('items') ?? [];
         $subtotal = 0;
-        $vat = 0;
+        $itemVat = 0;  // This is the VAT calculated at item level
+        $itemDiscountedSubtotal = 0; // Track the discounted subtotal at item level
         $otherTaxes = 0;
-        $totalDiscount = 0;
+        $itemsDiscount = 0;
 
         foreach ($items as $item) {
             $quantity = floatval($item['quantity'] ?? 1);
@@ -1252,21 +1358,58 @@ class OrderResource extends Resource
             $vatAmount = floatval($item['vat_amount'] ?? 0);
             $otherTaxesAmount = floatval($item['other_taxes_amount'] ?? 0);
             $discountAmount = floatval($item['discount_amount'] ?? 0);
+            $discountType = $item['discount_type'] ?? 'fixed';
+
+            // Calculate discount based on type
+            $itemDiscount = $discountAmount;
+            if ($discountType === 'percentage') {
+                $itemDiscount = ($unitPrice * $quantity) * ($discountAmount / 100);
+            }
+
+            // Calculate item's discounted amount
+            $itemLineTotal = $unitPrice * $quantity;
+            $itemDiscountedTotal = max(0, $itemLineTotal - $itemDiscount);
 
             // Add to totals
-            $subtotal += $unitPrice * $quantity;
-            $vat += $vatAmount * $quantity;
+            $subtotal += $itemLineTotal;
+            $itemVat += $vatAmount * $quantity;
+            $itemDiscountedSubtotal += $itemDiscountedTotal;
             $otherTaxes += $otherTaxesAmount * $quantity;
-            $totalDiscount += $discountAmount;
+            $itemsDiscount += $itemDiscount;
         }
 
         $set('subtotal', number_format($subtotal, 2, '.', ''));
-        $set('vat', number_format($vat, 2, '.', ''));
         $set('other_taxes', number_format($otherTaxes, 2, '.', ''));
-        $set('discount', number_format($totalDiscount, 2, '.', ''));
 
-        // Total calculation (taxes are already calculated on discounted prices)
-        $total = $subtotal + $vat + $otherTaxes - $totalDiscount;
+        // If this is a repeater update (item added/removed) and no order-level discount was manually entered,
+        // then update the total discount from items
+        if (!$get('discount_manually_set')) {
+            $set('discount', number_format($itemsDiscount, 2, '.', ''));
+        }
+
+        // Get current order discount value
+        $orderDiscountValue = floatval($get('discount') ?? 0);
+        $orderDiscountType = $get('order_discount_type') ?? 'fixed';
+        $orderDiscountAmount = $orderDiscountValue;
+
+        if ($orderDiscountType === 'percentage') {
+            $orderDiscountAmount = $subtotal * ($orderDiscountValue / 100);
+        }
+
+        // Calculate the discounted subtotal
+        $discountedSubtotal = $subtotal - $orderDiscountAmount;
+
+        // Calculate the effective VAT rate based on the already-discounted amounts at item level
+        $vatRate = $itemDiscountedSubtotal > 0 ? $itemVat / $itemDiscountedSubtotal : 0;
+
+        // Recalculate VAT based on the order-level discounted subtotal
+        $recalculatedVat = $discountedSubtotal * $vatRate;
+
+        // Update the VAT value
+        $set('vat', number_format($recalculatedVat, 2, '.', ''));
+
+        // Total calculation with order-level discount and recalculated VAT
+        $total = $discountedSubtotal + $recalculatedVat + $otherTaxes;
         $set('total', number_format($total, 2, '.', ''));
 
         // Update balance left
@@ -1311,13 +1454,22 @@ class OrderResource extends Resource
         $vatRate = floatval($get('vat_rate') ?? 0);
         $otherTaxesRate = floatval($get('other_taxes_rate') ?? 0);
         $discountAmount = floatval($get('discount_amount') ?? 0);
+        $discountType = $get('discount_type') ?? 'fixed';
 
         // Check if tax values were manually edited
         $vatIsManual = $get('vat_amount_is_manual') === true;
         $otherTaxesIsManual = $get('other_taxes_amount_is_manual') === true;
 
+        // Calculate discount based on type
+        $totalDiscountAmount = $discountAmount;
+
+        if ($discountType === 'percentage') {
+            // Convert percentage to actual amount
+            $totalDiscountAmount = ($unitPrice * $quantity) * ($discountAmount / 100);
+        }
+
         // Calculate discounted price per unit
-        $discountPerUnit = $discountAmount / $quantity;
+        $discountPerUnit = $totalDiscountAmount / $quantity;
         $discountedUnitPrice = max(0, $unitPrice - $discountPerUnit);
 
         // Only calculate VAT if not manually set
@@ -1338,7 +1490,86 @@ class OrderResource extends Resource
         $totalPricePerUnit = $discountedUnitPrice + $vatAmount + $otherTaxesAmount;
         $set('total_price', number_format($totalPricePerUnit * $quantity, 2, '.', ''));
 
+        // Reset Order Summary to default state
+        $set('../../order_discount_type', 'fixed');
+        $set('../../discount_manually_set', false);
+
         self::calculateOrderTotals($set, $get);
+    }
+
+    private static function recalculateOrderTotals(Forms\Set $set, Forms\Get $get): void
+    {
+        // This method is only called when the order total discount is manually changed
+        // It does not affect individual line items
+
+        $subtotal = floatval($get('subtotal') ?? 0);
+        $originalVat = floatval($get('vat') ?? 0);
+        $otherTaxes = floatval($get('other_taxes') ?? 0);
+        $discountValue = floatval($get('discount') ?? 0);
+        $discountType = $get('order_discount_type') ?? 'fixed';
+
+        // Calculate actual discount amount
+        $totalDiscountAmount = $discountValue;
+        if ($discountType === 'percentage') {
+            $totalDiscountAmount = $subtotal * ($discountValue / 100);
+        }
+
+        // Calculate the discounted subtotal at the order level
+        $discountedSubtotal = $subtotal - $totalDiscountAmount;
+
+        // We need to recalculate the VAT based on item-level data to ensure accuracy
+        // Process all items to get the correct VAT rate
+        $items = $get('items') ?? [];
+        $itemVat = 0;
+        $itemDiscountedSubtotal = 0;
+
+        foreach ($items as $item) {
+            $quantity = floatval($item['quantity'] ?? 1);
+            $unitPrice = floatval($item['unit_price'] ?? 0);
+            $vatAmount = floatval($item['vat_amount'] ?? 0);
+            $discountAmount = floatval($item['discount_amount'] ?? 0);
+            $discountType = $item['discount_type'] ?? 'fixed';
+
+            // Calculate discount based on type
+            $itemDiscount = $discountAmount;
+            if ($discountType === 'percentage') {
+                $itemDiscount = ($unitPrice * $quantity) * ($discountAmount / 100);
+            }
+
+            // Calculate item's discounted amount
+            $itemLineTotal = $unitPrice * $quantity;
+            $itemDiscountedTotal = max(0, $itemLineTotal - $itemDiscount);
+
+            // Add to tracking totals
+            $itemVat += $vatAmount * $quantity;
+            $itemDiscountedSubtotal += $itemDiscountedTotal;
+        }
+
+        // Calculate the effective VAT rate based on actual item data with discounts
+        $vatRate = $itemDiscountedSubtotal > 0 ? $itemVat / $itemDiscountedSubtotal : 0;
+
+        // Recalculate VAT based on the order-level discounted subtotal
+        $recalculatedVat = $discountedSubtotal * $vatRate;
+
+        // Update the VAT value
+        $set('vat', number_format($recalculatedVat, 2, '.', ''));
+
+        // For fixed discount type, ensure the displayed value is rounded properly
+        if ($discountType !== 'percentage') {
+            $set('discount', number_format($totalDiscountAmount, 2, '.', ''));
+        }
+
+        // Calculate total with the new VAT on discounted amount
+        $total = $discountedSubtotal + $recalculatedVat + $otherTaxes;
+        $set('total', number_format($total, 2, '.', ''));
+
+        // Update balance left
+        $amountPaid = floatval($get('amount_paid') ?? 0);
+        $balanceLeft = $total - $amountPaid;
+        $set('balance_left', number_format($balanceLeft, 2, '.', ''));
+
+        // Make sure the discount_manually_set flag is set
+        $set('discount_manually_set', true);
     }
 
     public static function getEloquentQuery(): Builder
