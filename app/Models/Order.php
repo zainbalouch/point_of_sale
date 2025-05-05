@@ -27,6 +27,7 @@ class Order extends Model
         'order_status_id',
         'shipping_fee',
         'subtotal',
+        'subtotal_after_discount',
         'vat',
         'other_taxes',
         'discount',

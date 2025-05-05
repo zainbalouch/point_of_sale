@@ -155,7 +155,7 @@ class InvoiceResource extends Resource
 
                                     // Set financial fields
                                     $set('subtotal', $order->subtotal);
-                                    $set('discount', $order->discount);
+                                    $set('discount', $order->discount_totals);
                                     $set('vat', $order->vat);
                                     $set('other_taxes', $order->other_taxes);
                                     $set('total', $order->total);
@@ -237,7 +237,7 @@ class InvoiceResource extends Resource
             'subtotal' => $order->subtotal,
             'vat' => $order->vat,
             'other_taxes' => $order->other_taxes,
-            'discount' => $order->discount,
+            'discount' => $order->discount_totals,
             'total' => $order->total,
             'amount_paid' => $order->amount_paid + ($formData['amount_left'] ?? 0),
             'issue_date' => now(),
@@ -263,7 +263,7 @@ class InvoiceResource extends Resource
                 'unit_price' => $orderItem->unit_price,
                 'vat_amount' => $orderItem->vat_amount,
                 'other_taxes_amount' => $orderItem->other_taxes_amount,
-                'discount_amount' => $orderItem->discount_amount,
+                'discount_amount' => $orderItem->discount,
                 'total_price' => $orderItem->total_price,
                 'note' => $orderItem->note,
             ]);

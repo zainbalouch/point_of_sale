@@ -175,7 +175,7 @@
                                                 {{ number_format($item->unit_price, 2) }}
                                             </td>
                                             <td class="col-2 text-center">
-                                                {{ number_format($item->discount_amount ?? 0, 2) }}
+                                                {{ number_format($item->discount ?? 0, 2) }}
                                             </td>
                                             <td class="col-2 text-center">
                                                 {{ number_format($item->vat_amount ?? 0, 2) }}
@@ -221,17 +221,17 @@
                                                 @endif
                                             </td>
                                         </tr>
-                                        @if ($order->discount > 0)
+                                        @if ($order->discount_totals > 0)
                                             <tr>
                                                 <td class="col-3 invoice-text-end">
                                                     <strong>{{ __('Discount') }}:</strong></td>
                                                 <td class="col-3 invoice-text-end">
                                                     @if (app()->getLocale() === 'ar')
-                                                        -{{ number_format($order->discount, 2) }}
+                                                        -{{ number_format($order->discount_totals, 2) }}
                                                         {{ $order->currency->code ?? 'SAR' }}
                                                     @else
                                                         -{{ $order->currency->code ?? 'SAR' }}
-                                                        {{ number_format($order->discount, 2) }}
+                                                        {{ number_format($order->discount_totals, 2) }}
                                                     @endif
                                                 </td>
                                                 <td class="col-3 invoice-text-end">

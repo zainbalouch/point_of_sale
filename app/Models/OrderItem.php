@@ -92,4 +92,16 @@ class OrderItem extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+
+    public function getDiscountAttribute($value)
+    {
+        $discountType = $this->discount_type;
+        $discountAmount = $this->discount_amount;
+
+        if ($discountType === 'percentage') {
+            return $this->unit_price * $this->quantity * $discountAmount / 100;
+        } else {
+            return $discountAmount;
+        }
+    }
 }

@@ -846,6 +846,9 @@ class OrderResource extends Resource
                                         Forms\Components\Hidden::make('products_discount')
                                             ->default(0)
                                             ->dehydrated(true),
+                                        Forms\Components\Hidden::make('subtotal')
+                                            ->default(0)
+                                            ->dehydrated(true),
                                         Forms\Components\Hidden::make('discount_manually_set')
                                             ->default(false)
                                             ->dehydrated(true),
@@ -856,7 +859,7 @@ class OrderResource extends Resource
                                             ->label(__('Subtotal After Discount'))
                                             ->numeric()
                                             ->disabled()
-                                            ->dehydrated(false)
+                                            ->dehydrated(true)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
                                         Forms\Components\TextInput::make('discount')
                                             ->label(__('Other Discounts'))
