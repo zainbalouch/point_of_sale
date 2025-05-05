@@ -30,6 +30,8 @@ class Order extends Model
         'vat',
         'other_taxes',
         'discount',
+        'discount_type',
+        'discount_totals',
         'total',
         'amount_paid',
         'payment_method_id',
@@ -53,6 +55,7 @@ class Order extends Model
         'vat' => 'decimal:2',
         'other_taxes' => 'decimal:2',
         'discount' => 'decimal:2',
+        'discount_totals' => 'decimal:2',
         'total' => 'decimal:2',
         'amount_paid' => 'decimal:2',
     ];

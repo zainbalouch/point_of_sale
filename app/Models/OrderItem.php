@@ -22,12 +22,13 @@ class OrderItem extends Model
         'product_code',
         'product_id',
         'quantity',
-        'unit_price',
         'tax_id',
         'note',
+        'unit_price',
         'vat_amount',
         'other_taxes_amount',
         'discount_amount',
+        'discount_type',
         'total_price',
     ];
 

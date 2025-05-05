@@ -662,7 +662,7 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
 
                                         Forms\Components\TextInput::make('discount_amount')
-                                            ->label(__('Discount'))
+                                             ->label(__('Discount'))
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
@@ -843,7 +843,7 @@ class OrderResource extends Resource
                                 // Right Column
                                 Forms\Components\Grid::make()
                                     ->schema([
-                                        Forms\Components\Hidden::make('discount')
+                                        Forms\Components\Hidden::make('products_discount')
                                             ->default(0)
                                             ->dehydrated(true),
                                         Forms\Components\Hidden::make('discount_manually_set')
@@ -858,23 +858,23 @@ class OrderResource extends Resource
                                             ->disabled()
                                             ->dehydrated(false)
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                                        Forms\Components\TextInput::make('other_discount')
+                                        Forms\Components\TextInput::make('discount')
                                             ->label(__('Other Discounts'))
                                             ->numeric()
                                             ->dehydrated(true)
                                             ->default(0)
-                                            ->prefix(fn($get) => $get('other_discount_type') === 'percentage' ? '%' : ($get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''))
+                                            ->prefix(fn($get) => $get('discount_type') === 'percentage' ? '%' : ($get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''))
                                             ->suffixAction(
                                                 Forms\Components\Actions\Action::make('changeOtherDiscountType')
                                                     ->icon('heroicon-o-cog')
-                                                    ->tooltip(fn (Forms\Get $get) => $get('other_discount_type') === 'fixed'
+                                                    ->tooltip(fn (Forms\Get $get) => $get('discount_type') === 'fixed'
                                                         ? __('Switch to percentage discount (%)')
                                                         : __('Switch to fixed amount discount ($)'))
                                                     ->action(function (Forms\Set $set, Forms\Get $get) {
                                                         // Toggle between fixed and percentage
-                                                        $currentType = $get('other_discount_type');
+                                                        $currentType = $get('discount_type');
                                                         $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
-                                                        $set('other_discount_type', $newType);
+                                                        $set('discount_type', $newType);
 
                                                         // Recalculate totals
                                                         self::recalculateOrderTotals($set, $get);
@@ -884,7 +884,7 @@ class OrderResource extends Resource
                                             ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
                                                 self::recalculateOrderTotals($set, $get);
                                             }),
-                                        Forms\Components\Hidden::make('other_discount_type')
+                                        Forms\Components\Hidden::make('discount_type')
                                             ->default('fixed')
                                             ->dehydrated(true)
                                             ->live()
@@ -910,7 +910,7 @@ class OrderResource extends Resource
                                         Forms\Components\Hidden::make('other_taxes_hidden')
                                             ->dehydrated(false)
                                             ->visible(fn (Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) == 0),
-                                        Forms\Components\TextInput::make('discounts_total')
+                                        Forms\Components\TextInput::make('discount_totals')
                                             ->label(__('Discounts Total'))
                                             ->numeric()
                                             ->disabled()
@@ -1140,7 +1140,7 @@ class OrderResource extends Resource
                     ->label(__('Other Taxes'))
                     ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('discount')
+                Tables\Columns\TextColumn::make('products_discount')
                     ->label(__('Discount'))
                     ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
@@ -1314,15 +1314,15 @@ class OrderResource extends Resource
         // Always update subtotal, other taxes, and total discount from item calculations
         $set('../../subtotal', number_format($subtotal, 2, '.', ''));
         $set('../../other_taxes', number_format($otherTaxes, 2, '.', ''));
-        $set('../../discount', number_format($itemsDiscount, 2, '.', ''));
+        $set('../../products_discount', number_format($itemsDiscount, 2, '.', ''));
 
         // Calculate the discounted subtotal
         $discountedSubtotal = max(0, $subtotal - $itemsDiscount);
         $set('../../subtotal_after_discount', number_format($discountedSubtotal, 2, '.', ''));
 
         // Get current other discount
-        $otherDiscountValue = floatval($get('../../other_discount') ?? 0);
-        $otherDiscountType = $get('../../other_discount_type') ?? 'fixed';
+        $otherDiscountValue = floatval($get('../../discount') ?? 0);
+        $otherDiscountType = $get('../../discount_type') ?? 'fixed';
         $otherDiscountAmount = $otherDiscountValue;
 
         if ($otherDiscountType === 'percentage') {
@@ -1335,7 +1335,7 @@ class OrderResource extends Resource
 
         // Calculate total discounts (sum of item discounts and other discounts)
         $totalDiscounts = $itemsDiscount + $otherDiscountAmount;
-        $set('../../discounts_total', number_format($totalDiscounts, 2, '.', ''));
+        $set('../../discount_totals', number_format($totalDiscounts, 2, '.', ''));
 
         // Calculate the effective VAT rate based on the already-discounted amounts at item level
         $vatRate = $itemDiscountedSubtotal > 0 ? $itemVat / $itemDiscountedSubtotal : 0;
@@ -1394,15 +1394,15 @@ class OrderResource extends Resource
         // Always update all totals from item calculations
         $set('subtotal', number_format($subtotal, 2, '.', ''));
         $set('other_taxes', number_format($otherTaxes, 2, '.', ''));
-        $set('discount', number_format($itemsDiscount, 2, '.', ''));
+        $set('products_discount', number_format($itemsDiscount, 2, '.', ''));
 
         // Calculate the discounted subtotal
         $discountedSubtotal = max(0, $subtotal - $itemsDiscount);
         $set('subtotal_after_discount', number_format($discountedSubtotal, 2, '.', ''));
 
         // Get current other discount
-        $otherDiscountValue = floatval($get('other_discount') ?? 0);
-        $otherDiscountType = $get('other_discount_type') ?? 'fixed';
+        $otherDiscountValue = floatval($get('discount') ?? 0);
+        $otherDiscountType = $get('discount_type') ?? 'fixed';
 
         // Calculate other discount amount
         $otherDiscountAmount = $otherDiscountValue;
@@ -1416,7 +1416,7 @@ class OrderResource extends Resource
 
         // Calculate total discounts (sum of item discounts and other discounts)
         $totalDiscounts = $itemsDiscount + $otherDiscountAmount;
-        $set('discounts_total', number_format($totalDiscounts, 2, '.', ''));
+        $set('discount_totals', number_format($totalDiscounts, 2, '.', ''));
 
         // Calculate the effective VAT rate based on the already-discounted amounts at item level
         $vatRate = $itemDiscountedSubtotal > 0 ? $itemVat / $itemDiscountedSubtotal : 0;
@@ -1426,6 +1426,9 @@ class OrderResource extends Resource
 
         // Update the VAT value
         $set('vat', number_format($recalculatedVat, 2, '.', ''));
+
+        // Store the discount type
+        $set('discount_type', $get('discount_type'));
 
         // Calculate total with the new VAT on discounted amount
         $total = $finalDiscountedSubtotal + $recalculatedVat + $otherTaxes;
@@ -1513,8 +1516,8 @@ class OrderResource extends Resource
         $set('../../order_discount_type', 'fixed');
         $set('../../discount_manually_set', false);
         // Don't reset other discount values
-        // $set('../../other_discount_type', 'fixed');
-        // $set('../../other_discount', 0);
+        // $set('../../discount_type', 'fixed');
+        // $set('../../discount', 0);
 
         self::calculateOrderTotals($set, $get);
     }
@@ -1529,15 +1532,15 @@ class OrderResource extends Resource
         $otherTaxes = floatval($get('other_taxes') ?? 0);
 
         // Get total discount from form (sum of item discounts)
-        $totalDiscount = floatval($get('discount') ?? 0);
+        $totalDiscount = floatval($get('products_discount') ?? 0);
 
         // Calculate the discounted subtotal after item discounts
         $discountedSubtotal = max(0, $subtotal - $totalDiscount);
         $set('subtotal_after_discount', number_format($discountedSubtotal, 2, '.', ''));
 
         // Get other discount values
-        $otherDiscountValue = floatval($get('other_discount') ?? 0);
-        $otherDiscountType = $get('other_discount_type') ?? 'fixed';
+        $otherDiscountValue = floatval($get('discount') ?? 0);
+        $otherDiscountType = $get('discount_type') ?? 'fixed';
 
         // Calculate other discount amount
         $otherDiscountAmount = $otherDiscountValue;
@@ -1551,7 +1554,7 @@ class OrderResource extends Resource
 
         // Calculate total discounts (sum of item discounts and other discounts)
         $totalDiscounts = $totalDiscount + $otherDiscountAmount;
-        $set('discounts_total', number_format($totalDiscounts, 2, '.', ''));
+        $set('discount_totals', number_format($totalDiscounts, 2, '.', ''));
 
         // We need to recalculate the VAT based on item-level data to ensure accuracy
         // Process all items to get the correct VAT rate
@@ -1589,6 +1592,9 @@ class OrderResource extends Resource
 
         // Update the VAT value
         $set('vat', number_format($recalculatedVat, 2, '.', ''));
+
+        // Store the discount type
+        $set('discount_type', $get('discount_type'));
 
         // Calculate total with the new VAT on discounted amount
         $total = $finalDiscountedSubtotal + $recalculatedVat + $otherTaxes;
