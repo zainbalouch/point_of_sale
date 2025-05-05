@@ -31,7 +31,8 @@ class Product extends Model
         'company_id',
     ];
 
-    protected $appends = ['image_url_path', 'name', 'description'];
+    // TODO: Add accessor and mutator for formattedPrice
+    protected $appends = ['image_url_path', 'name', 'description', 'formattedPrice'];
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -116,6 +117,12 @@ class Product extends Model
     {
         $locale = app()->getLocale();
         return $this->{"description_$locale"};
+    }
+
+    // TODO: Add accessor and mutator for formattedPrice
+    public function getFormattedPriceAttribute()
+    {
+        return number_format($this->price, 2, '.', ',');
     }
 
     /**
