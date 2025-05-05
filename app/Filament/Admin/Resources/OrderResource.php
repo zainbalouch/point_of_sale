@@ -52,6 +52,7 @@ class OrderResource extends Resource
                 Forms\Components\Section::make(__('Point of Sale Information'))
                     ->schema([
                         Forms\Components\Select::make('company_id')
+                            ->label(__('Company'))
                             ->relationship('company', 'legal_name')
                             ->searchable()
                             ->preload()
@@ -74,6 +75,7 @@ class OrderResource extends Resource
                             }),
                         Forms\Components\Select::make('point_of_sale_id')
                             ->relationship('pointOfSale', 'name_' . app()->getLocale())
+                            ->label(__('Point of Sale'))
                             ->searchable()
                             ->preload()
                             ->required()

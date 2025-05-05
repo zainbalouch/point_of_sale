@@ -6,7 +6,7 @@
             </form>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-11">
             @foreach ($metrics as $metric)
                 <div class="flex items-center gap-4 p-4 bg-white rounded-lg shadow dark:bg-gray-800">
                     <div class="p-3 text-primary-500 bg-primary-50 rounded-lg dark:bg-primary-900/50">
