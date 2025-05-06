@@ -113,7 +113,8 @@ class InvoiceResource extends Resource
                                     ->leftJoin('order_items', 'orders.id', '=', 'order_items.order_id')
                                     ->selectRaw("COALESCE(orders.customer_name, 'Customer') as customer_name")
                                     ->selectRaw("CONCAT(COALESCE(orders.number, ''), ' - ', COALESCE(orders.customer_name, 'Customer'), ' (Total: ', COALESCE(orders.total, 0), ', Paid: ', COALESCE(orders.amount_paid, 0), ', Items: ', COUNT(DISTINCT order_items.id), ')') as display_text")
-                                    ->groupBy('orders.id', 'orders.number', 'orders.total', 'orders.amount_paid', 'orders.customer_name');
+                                    ->groupBy('orders.id', 'orders.number', 'orders.total', 'orders.amount_paid', 'orders.customer_name')
+                                    ->whereDoesntHave('invoices');
 
                                 // If customer is selected, show only their orders
                                 if ($customerId) {

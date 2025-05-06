@@ -382,9 +382,33 @@ class OrderResource extends Resource
                                             ->relationship(
                                                 name: 'product',
                                                 titleAttribute: 'name_en',
-                                                modifyQueryUsing: function (Builder $query) {
+                                                modifyQueryUsing: function (Builder $query, Forms\Get $get) {
                                                     $user = Filament::auth()->user();
-                                                    $query->where('quantity', '>', 0);
+
+                                                    // Get all items currently in the repeater
+                                                    $items = $get('../../items') ?? [];
+
+                                                    // Extract product IDs that are already selected in other items
+                                                    $selectedProductIds = [];
+                                                    $currentItemKey = $get('../../items')
+                                                        ? array_search($get('..'), $get('../../items'))
+                                                        : null;
+
+                                                    foreach ($items as $key => $item) {
+                                                        // Skip current item to allow keeping its current product
+                                                        if ($key === $currentItemKey) {
+                                                            continue;
+                                                        }
+
+                                                        if (!empty($item['product_id'])) {
+                                                            $selectedProductIds[] = $item['product_id'];
+                                                        }
+                                                    }
+
+                                                    // Exclude already selected products
+                                                    if (!empty($selectedProductIds)) {
+                                                        $query->whereNotIn('id', $selectedProductIds);
+                                                    }
 
                                                     if ($user->point_of_sale_id) {
                                                         return $query->where('point_of_sale_id', $user->point_of_sale_id);
@@ -767,7 +791,7 @@ class OrderResource extends Resource
                             ])
                             ->defaultItems(1)
                             ->reorderable(false)
-                            ->cloneable()
+                            // ->cloneable()
                             ->itemLabel(function (array $state): ?string {
                                 $productName = $state['product_name_en'] ?? null;
                                 $quantity = $state['quantity'] ?? 0;
