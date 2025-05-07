@@ -432,11 +432,7 @@ class OrderResource extends Resource
                                                             ->required()
                                                             ->maxLength(255)
                                                             ->live(onBlur: true)
-                                                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                                                if ($operation !== 'create') {
-                                                                    return;
-                                                                }
-
+                                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
                                                                 $set('slug', Str::slug($state));
                                                             }),
 
@@ -490,8 +486,7 @@ class OrderResource extends Resource
                                                             ->numeric()
                                                             ->required()
                                                             ->minValue(0)
-                                                            ->step(0.01)
-                                                            ->live()
+                                                            ->live(onBlur: true)
                                                             ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
 
                                                         Forms\Components\Select::make('company_id')
@@ -587,8 +582,26 @@ class OrderResource extends Resource
                                                                 'taxes',
                                                                 fn() => app()->getLocale() === 'en' ? 'name_en' : 'name_ar'
                                                             )
-                                                            ->options(function () {
-                                                                $companyId = Filament::auth()->user()->company_id;
+                                                            ->options(function (Forms\Get $get) {
+                                                                $user = Filament::auth()->user();
+                                                                $companyId = null;
+
+                                                                // If user has point_of_sale_id, get company from POS
+                                                                if ($user && $user->point_of_sale_id) {
+                                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                    if ($pointOfSale) {
+                                                                        $companyId = $pointOfSale->company_id;
+                                                                    }
+                                                                }
+                                                                // If user has company_id, use it directly
+                                                                elseif ($user && $user->company_id) {
+                                                                    $companyId = $user->company_id;
+                                                                }
+                                                                // Otherwise use the selected company from the form
+                                                                else {
+                                                                    $companyId = $get('company_id');
+                                                                }
+
                                                                 if (!$companyId) {
                                                                     return [];
                                                                 }
