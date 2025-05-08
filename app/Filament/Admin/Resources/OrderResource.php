@@ -47,7 +47,14 @@ class OrderResource extends Resource
                             ->dehydrated(false)
                             ->placeholder(__('Will be auto-generated'))
                             ->maxLength(255),
-                    ]),
+                        Forms\Components\DatePicker::make('issue_date')
+                            ->label(__('Issue Date'))
+                            ->required()
+                            ->dehydrated()
+                            ->default(now())
+                            ->displayFormat('d/m/Y')
+                            ->native(false),
+                    ])->columns(2),
 
                 Forms\Components\Section::make(__('Point of Sale Information'))
                     ->schema([
@@ -1208,14 +1215,6 @@ class OrderResource extends Resource
                     ->label(__('VAT'))
                     ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('other_taxes')
-                    ->label(__('Other Taxes'))
-                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('products_discount')
-                    ->label(__('Discount'))
-                    ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('total')
                     ->label(__('Total'))
                     ->money(fn(Order $record): string => $record->currency?->code ?? 'USD')
@@ -1237,9 +1236,9 @@ class OrderResource extends Resource
                     })
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created At'))
-                    ->dateTime()
+                Tables\Columns\TextColumn::make('issue_date')
+                    ->label(__('Issue Date'))
+                    ->date()
                     ->sortable()
                     ->toggleable(),
             ])
@@ -1254,7 +1253,7 @@ class OrderResource extends Resource
                     ->label(__('Payment Method'))
                     ->preload()
                     ->searchable(),
-                Filter::make('created_at')
+                Filter::make('issue_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
                             ->label(__('Order Date From')),
@@ -1265,11 +1264,11 @@ class OrderResource extends Resource
                         return $query
                             ->when(
                                 $data['created_from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('issue_date', '>=', $date),
                             )
                             ->when(
                                 $data['created_until'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('issue_date', '<=', $date),
                             );
                     }),
             ])
@@ -1310,7 +1309,7 @@ class OrderResource extends Resource
                         ->action(fn(Collection $records) => $records->each->forceDelete())
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('issue_date', 'desc');
     }
 
     public static function getRelations(): array

@@ -23,6 +23,7 @@
     "Invoice item": "عنصر فاتورة",
     "Orders": "الطلبات",
     "Order": "طلب",
+    "Taxable Order": "طلب ضريبة",
     "Order items": "عناصر الطلب",
     "Order item": "عنصر طلب",
     "Addresses": "العناوين",
@@ -47,7 +48,9 @@
     "This will be used in the URL. Use lowercase letters, numbers, and hyphens only.": "سيتم استخدام هذا في عنوان URL. استخدم الأحرف الصغيرة والأرقام والشرطات فقط.",
     "Choose a parent category to create a hierarchy": "اختر فئة أم لإنشاء تسلسل هرمي",
     "Create new product category": "إنشاء فئة منتج جديدة",
-
+    "Administration": "الإدارة",
+    "Companies": "الشركات",
+    "Other Settings": "إعدادات أخرى",
     "VAT Number": "رقم ضريبة القيمة المضافة",
     "Active Status": "حالة النشاط",
     "Whether the customer is active": "ما إذا كان العميل نشطًا",

@@ -25,6 +25,7 @@ class Order extends Model
         'user_id',
         'company_id',
         'order_status_id',
+        'issue_date',
         'shipping_fee',
         'subtotal',
         'subtotal_after_discount',
@@ -71,16 +72,23 @@ class Order extends Model
         static::creating(function ($order) {
             // Only generate number if it's not already set
             if (empty($order->number)) {
-                // Generate a unique order number with prefix ORD, year, month and a random 6-character string
+                // Get the current year and month
                 $datePrefix = now()->format('Ym');
-                $randomStr = strtoupper(Str::random(6));
-                $order->number = "ORD-{$datePrefix}-{$randomStr}";
 
-                // Ensure the generated number is unique
-                while (static::where('number', $order->number)->exists()) {
-                    $randomStr = strtoupper(Str::random(6));
-                    $order->number = "ORD-{$datePrefix}-{$randomStr}";
+                // Get the last order number for this month
+                $lastOrder = static::where('number', 'like', "ORD-{$datePrefix}-%")
+                    ->orderBy('number', 'desc')
+                    ->first();
+
+                // Extract the sequence number from the last order or start from 1
+                $sequence = 1;
+                if ($lastOrder) {
+                    $lastSequence = (int) substr($lastOrder->number, -6);
+                    $sequence = $lastSequence + 1;
                 }
+
+                // Generate the new order number with padded sequence
+                $order->number = "ORD-{$datePrefix}-" . str_pad($sequence, 6, '0', STR_PAD_LEFT);
             }
         });
 

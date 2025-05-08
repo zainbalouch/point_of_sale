@@ -18,7 +18,6 @@ class CreateOrder extends CreateRecord
         $order = $this->record;
 
         // Log for debugging
-        Log::info('Order created: #' . $order->id);
 
         // Get all items of the order
         $orderItems = $order->items;

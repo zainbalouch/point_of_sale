@@ -5,7 +5,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- Stylesheet
 ======================= -->
-    <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/bootstrap.css') }}">
+    @if (app()->getLocale() == 'ar')
+        <link href="/assets/css/bootstrap.rtl.min.css" rel="stylesheet">
+    @else
+        <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/bootstrap.css') }}">
+    @endif
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/invoice.css') }}" />
     @if (app()->getLocale() === 'ar')
         <style>
@@ -45,6 +49,12 @@
     <!-- Print Styles for Header on Each Page -->
     <style>
         @media print {
+            @page {
+                size: A4;
+                margin-top: 0;
+                margin-bottom: 0;
+            }
+
 
             .header-print {
                 display: table-header-group;
@@ -75,13 +85,32 @@
             bottom: 0;
         }
 
-        .mainTable{
+        .mainTable {
             min-width: 728px;
         }
 
-        .logo{
+        .logo {
             width: 100px;
             margin: 10px;
+        }
+
+        /* Darker table borders */
+        .table {
+            border-color: #000;
+            border-width: 0.5px;
+        }
+
+        .table td,
+        .table th {
+            border-color: #000;
+            border-width: 0.5px;
+        }
+
+        .mt-3.policy-section.invoice-text-start p,
+        .mt-3.policy-section.invoice-text-start h3 {
+            line-height: 1.4;
+            text-align: justify;
+            /* You can adjust this value as needed */
         }
     </style>
 </head>
@@ -102,9 +131,9 @@
                         <div class="row">
                             <div class="col-6"><strong>{{ __('Date') }}:</strong>
                                 @if (app()->getLocale() === 'ar')
-                                    {{ $order->created_at->format('Y/m/d') }}
+                                    {{ isset($order->issue_date) ? $order->issue_date->format('Y/m/d') : $order->created_at->format('Y/m/d') }}
                                 @else
-                                    {{ $order->created_at->format('d/m/Y') }}
+                                    {{ isset($order->issue_date) ? $order->issue_date->format('d/m/Y') : $order->created_at->format('d/m/Y') }}
                                 @endif
                             </div>
                             <div class="col-6 invoice-text-end"> <strong>{{ __('Invoice No') }}:</strong>
@@ -114,9 +143,9 @@
                         </div>
                         <hr>
                         <div class="row">
-                            <div class="col-6 text-end order-1"> <strong>{{ __('Pay To') }}:</strong>
+                            <div class="col-6 order-1"> <strong>{{ __('Pay To') }}:</strong>
                                 <address>
-                                    {{ $order->company->legal_name }}<br />
+                                    {{-- {{ $order->company->legal_name }}<br /> --}}
                                     @if ($order->pointOfSale)
                                         {{ $order->pointOfSale->{'name_' . app()->getLocale()} }}<br />
                                     @endif
@@ -136,18 +165,18 @@
                                         @if ($order->customer->address)
                                             {{ $order->customer->address }}<br />
                                         @endif
-                                        {{ $order->customer->email }}<br />
+                                        {{-- {{ $order->customer->email }}<br /> --}}
                                         {{ $order->customer->phone_number }}
                                     @else
                                         {{ $order->customer_name ?? 'N/A' }}<br />
-                                        {{ $order->customer_email ?? '' }}<br />
+                                        {{-- {{ $order->customer_email ?? '' }}<br /> --}}
                                         {{ $order->customer_phone_number ?? '' }}
                                     @endif
                                 </address>
                             </div>
                         </div>
                         <div class="table-responsive">
-                            <table class="table border mb-0">
+                            <table class="table mb-0">
                                 <thead>
                                     <tr class="bg-light">
                                         <td class="col-4"><strong>{{ __('Products') }}</strong></td>
@@ -202,11 +231,13 @@
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="table-responsive">
-                                    <table class="table border border-top-0 mb-0">
-                                        <tr>
-                                            <td class="invoice-text-end"><strong>{{ __('Subtotal') }}:</strong></td>
-                                            <td class="col-6 invoice-text-end">
+                                <div class="table-responsive border-top-0">
+                                    <table class="table border-top-0 mb-0">
+                                        <tr class="border-top-0">
+                                            <td class="invoice-text-end border-top-0">
+                                                <strong>{{ __('Subtotal') }}:</strong>
+                                            </td>
+                                            <td class="col-6 invoice-text-end border-top-0">
                                                 @if (app()->getLocale() === 'ar')
                                                     {{ number_format($order->subtotal, 2) }}
                                                     {{ $order->currency->code ?? 'SAR' }}
@@ -328,12 +359,13 @@
     </table>
     <div class="header">
         <header>
-            <div class="row align-items-center gy-3">
-                <div class="col-5 text-center invoice-text-start">
-                    <img id="logo" class="logo" src="{{ asset('storage/'.$logo) }}" title="Koice" alt="Koice" />
+            <div class="row align-items-center gy-3 mt-2">
+                <div class="col-5 position-absolute top-0 start-0 margin-auto text-center invoice-text-start">
+                    <img id="logo" class="logo m-0" src="{{ asset('storage/' . $logo) }}" title="Koice"
+                        alt="Koice" />
                 </div>
-                <div class="col-7 text-center invoice-text-end">
-                    <h6 class="text-7 mb-0">{{ __('VAT Invoice') }}</h6>
+                <div class="col-12 text-center invoice-text-end">
+                    <h6 class="text-7 mb-0 text-center">{{ __('VAT Invoice') }}</h6>
                 </div>
             </div>
             <hr>
