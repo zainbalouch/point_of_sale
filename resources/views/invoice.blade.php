@@ -90,8 +90,9 @@
         }
 
         .logo {
-            width: 100px;
+            width: auto;
             margin: 10px;
+            max-height: 70px;
         }
 
         /* Darker table borders */
@@ -360,7 +361,7 @@
     <div class="header">
         <header>
             <div class="row align-items-center gy-3 mt-2">
-                <div class="col-5 position-absolute top-0 start-0 margin-auto text-center invoice-text-start">
+                <div class="col-5 position-absolute top-0 mt-1 ms-3 start-0 margin-auto text-center invoice-text-start">
                     <img id="logo" class="logo m-0" src="{{ asset('storage/' . $logo) }}" title="Koice"
                         alt="Koice" />
                 </div>
