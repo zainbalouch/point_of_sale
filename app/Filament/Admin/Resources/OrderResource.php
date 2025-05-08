@@ -96,12 +96,24 @@ class OrderResource extends Resource
                         Forms\Components\Select::make('customer_id')
                             ->relationship(
                                 name: 'customer',
-                                modifyQueryUsing: function (Builder $query) {
+                                modifyQueryUsing: function (Builder $query, Forms\Get $get) {
                                     $user = Filament::auth()->user();
                                     if ($user->point_of_sale_id) {
-                                        return $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                        return $query->where('point_of_sale_id', $user->point_of_sale_id)
+                                            ->where('is_active', true);
+                                    } else {
+                                        if ($get('company_id')) {
+                                            if ($get('point_of_sale_id')) {
+                                                return $query->where('company_id', $get('company_id'))
+                                                    ->where('point_of_sale_id', $get('point_of_sale_id'))
+                                                    ->where('is_active', true);
+                                            } else {
+                                                return $query->where('company_id', $get('company_id'))
+                                                    ->where('is_active', true);
+                                            }
+                                        }
+                                        return $query->where('is_active', true);
                                     }
-                                    return $query;
                                 }
                             )
                             ->getOptionLabelFromRecordUsing(fn($record) => "{$record->first_name} {$record->last_name}")
@@ -112,12 +124,15 @@ class OrderResource extends Resource
                             ->live()
                             ->default(function () {
                                 $user = Filament::auth()->user();
-                                $query = \App\Models\Customer::query();
-
                                 if ($user->point_of_sale_id) {
-                                    $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                    $query = \App\Models\Customer::query()
+                                        ->where('is_active', true);
+
+                                    if ($user->point_of_sale_id) {
+                                        $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                    }
+                                    return $query->first()?->id;
                                 }
-                                return $query->first()?->id;
                             })
                             ->afterStateHydrated(function ($state, Forms\Set $set) {
                                 if (!$state) return;
@@ -127,6 +142,8 @@ class OrderResource extends Resource
                                     $set('customer_name', "{$customer->first_name} {$customer->last_name}");
                                     $set('customer_email', $customer->email);
                                     $set('customer_phone_number', $customer->phone_number);
+                                    $set('company_id', $customer->company_id);
+                                    $set('point_of_sale_id', $customer->point_of_sale_id);
                                 }
                             })
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
@@ -134,6 +151,8 @@ class OrderResource extends Resource
                                     $set('customer_name', null);
                                     $set('customer_email', null);
                                     $set('customer_phone_number', null);
+                                    $set('company_id', null);
+                                    $set('point_of_sale_id', null);
                                     return;
                                 }
 
@@ -142,6 +161,8 @@ class OrderResource extends Resource
                                     $set('customer_name', "{$customer->first_name} {$customer->last_name}");
                                     $set('customer_email', $customer->email);
                                     $set('customer_phone_number', $customer->phone_number);
+                                    $set('company_id', $customer->company_id);
+                                    $set('point_of_sale_id', $customer->point_of_sale_id);
                                 }
                             })
                             ->createOptionForm([
@@ -384,7 +405,6 @@ class OrderResource extends Resource
                                                 titleAttribute: 'name_en',
                                                 modifyQueryUsing: function (Builder $query, Forms\Get $get) {
                                                     $user = Filament::auth()->user();
-
                                                     // Get all items currently in the repeater
                                                     $items = $get('../../items') ?? [];
 
@@ -410,11 +430,15 @@ class OrderResource extends Resource
                                                         $query->whereNotIn('id', $selectedProductIds);
                                                     }
 
+
                                                     if ($user->point_of_sale_id) {
                                                         return $query->where('point_of_sale_id', $user->point_of_sale_id);
-                                                    } elseif ($user->company_id) {
-                                                        return $query->where('company_id', $user->company_id);
+                                                    } else {
+                                                        // Access point_of_sale_id from the parent form state
+                                                        $pointOfSaleId = $get('../../point_of_sale_id');
+                                                        return $query->where('point_of_sale_id', $pointOfSaleId);
                                                     }
+
                                                     return $query;
                                                 }
                                             )
@@ -488,6 +512,13 @@ class OrderResource extends Resource
                                                             ->minValue(0)
                                                             ->live(onBlur: true)
                                                             ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+
+                                                        Forms\Components\TextInput::make('quantity')
+                                                            ->label(__('Quantity'))
+                                                            ->numeric()
+                                                            ->required()
+                                                            ->minValue(0)
+                                                            ->default(0),
 
                                                         Forms\Components\Select::make('company_id')
                                                             ->label(__('Company'))
@@ -668,7 +699,6 @@ class OrderResource extends Resource
                                             ->required()
                                             ->numeric()
                                             ->default(1)
-                                            ->minValue(1)
                                             // ->maxValue(function (Forms\Get $get) {
                                             //     $productId = $get('product_id');
                                             //     if (!$productId) return null;
@@ -701,18 +731,18 @@ class OrderResource extends Resource
                                             ->columnSpan(1),
 
                                         Forms\Components\TextInput::make('discount_amount')
-                                             ->label(__('Discount'))
+                                            ->label(__('Discount'))
                                             ->hiddenLabel()
                                             ->numeric()
                                             ->dehydrated(true)
                                             ->default(0)
                                             ->minValue(0)
                                             ->live(onBlur: true)
-                                            ->prefix(fn (Forms\Get $get) => $get('discount_type') === 'percentage' ? '%' : Setting::get('default_currency') ?? 'SAR')
+                                            ->prefix(fn(Forms\Get $get) => $get('discount_type') === 'percentage' ? '%' : Setting::get('default_currency') ?? 'SAR')
                                             ->suffixAction(
                                                 Forms\Components\Actions\Action::make('changeDiscountType')
                                                     ->icon('heroicon-o-cog')
-                                                    ->tooltip(fn (Forms\Get $get) => $get('discount_type') === 'fixed'
+                                                    ->tooltip(fn(Forms\Get $get) => $get('discount_type') === 'fixed'
                                                         ? __('Switch to percentage discount (%)')
                                                         : __('Switch to fixed amount discount ($)'))
                                                     ->action(function (Forms\Set $set, Forms\Get $get) {
@@ -909,7 +939,7 @@ class OrderResource extends Resource
                                             ->suffixAction(
                                                 Forms\Components\Actions\Action::make('changeOtherDiscountType')
                                                     ->icon('heroicon-o-cog')
-                                                    ->tooltip(fn (Forms\Get $get) => $get('discount_type') === 'fixed'
+                                                    ->tooltip(fn(Forms\Get $get) => $get('discount_type') === 'fixed'
                                                         ? __('Switch to percentage discount (%)')
                                                         : __('Switch to fixed amount discount ($)'))
                                                     ->action(function (Forms\Set $set, Forms\Get $get) {
@@ -948,10 +978,10 @@ class OrderResource extends Resource
                                             ->disabled()
                                             ->dehydrated()
                                             ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                            ->visible(fn (Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) > 0),
+                                            ->visible(fn(Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) > 0),
                                         Forms\Components\Hidden::make('other_taxes_hidden')
                                             ->dehydrated(false)
-                                            ->visible(fn (Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) == 0),
+                                            ->visible(fn(Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) == 0),
                                         Forms\Components\TextInput::make('discount_totals')
                                             ->label(__('Discounts Total'))
                                             ->numeric()
@@ -1262,8 +1292,8 @@ class OrderResource extends Resource
                     ->modalHeading(__('Permanently delete order'))
                     ->modalDescription(__('Are you sure you want to permanently delete this order? This action cannot be undone.'))
                     ->modalSubmitActionLabel(__('Yes, delete permanently'))
-                    ->action(fn (Order $record) => $record->forceDelete())
-                    ->visible(fn (Order $record): bool => $record->trashed()),
+                    ->action(fn(Order $record) => $record->forceDelete())
+                    ->visible(fn(Order $record): bool => $record->trashed()),
             ])
             ->actionsColumnLabel(__('Actions'))
             ->bulkActions([
@@ -1277,7 +1307,7 @@ class OrderResource extends Resource
                         ->modalHeading(__('Permanently delete selected orders'))
                         ->modalDescription(__('Are you sure you want to permanently delete these orders? This action cannot be undone.'))
                         ->modalSubmitActionLabel(__('Yes, delete permanently'))
-                        ->action(fn (Collection $records) => $records->each->forceDelete())
+                        ->action(fn(Collection $records) => $records->each->forceDelete())
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -1669,5 +1699,4 @@ class OrderResource extends Resource
 
         return $query;
     }
-
 }

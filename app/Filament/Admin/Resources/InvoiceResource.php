@@ -79,11 +79,11 @@ class InvoiceResource extends Resource
                             ->label(__('Customer'))
                             ->relationship('customer', 'first_name', fn ($query) => $query
                                 ->select(['id', 'first_name', 'last_name'])
-                                ->where('company_id', Filament::auth()->user()->company_id)
-                                ->where('is_active', true)
-                                ->when(Filament::auth()->user()->point_of_sale_id, function ($query) {
-                                    return $query->where('point_of_sale_id', Filament::auth()->user()->point_of_sale_id);
+                                ->when(Filament::auth()->user()->company_id && Filament::auth()->user()->point_of_sale_id, function ($query) {
+                                    return $query->where('company_id', Filament::auth()->user()->company_id)
+                                        ->where('point_of_sale_id', Filament::auth()->user()->point_of_sale_id);
                                 })
+                                ->where('is_active', true)
                             )
                             ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
                             ->searchable(['first_name', 'last_name'])

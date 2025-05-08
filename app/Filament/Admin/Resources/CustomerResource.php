@@ -128,6 +128,7 @@ class CustomerResource extends Resource
                                     ->label(__('Point of Sale'))
                                     ->relationship('pointOfSale', 'name_en')
                                     ->searchable()
+                                    ->required()
                                     ->preload()
                                     ->options(function (Forms\Get $get) {
                                         $companyId = $get('company_id');

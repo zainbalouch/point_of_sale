@@ -96,7 +96,7 @@ class ProductResource extends Resource
                                 if ($user && $user->company_id) {
                                     return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
                                 }
-                                return [];
+                                return \App\Models\Company::where('is_active', true)->pluck('legal_name', 'id');
                             })
                             ->required()
                             ->searchable()
@@ -120,6 +120,7 @@ class ProductResource extends Resource
 
                         Forms\Components\Select::make('point_of_sale_id')
                             ->label(__('Point of Sale'))
+                            ->required()
                             ->options(function (Forms\Get $get) {
                                 $companyId = $get('company_id');
                                 if (!$companyId) {
@@ -223,46 +224,15 @@ class ProductResource extends Resource
                                             ->required()
                                             ->maxLength(255)
                                             ->live(onBlur: true)
-                                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                                if ($operation !== 'create') {
-                                                    return;
-                                                }
+                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
                                                 $set('slug', Str::slug($state));
                                             }),
-
-                                        Forms\Components\RichEditor::make('description_en')
-                                            ->label(__('Description'))
-                                            ->toolbarButtons([
-                                                'bold',
-                                                'italic',
-                                                'bulletList',
-                                                'orderedList',
-                                                'link',
-                                            ])
-                                            ->columnSpanFull(),
-                                    ])
-                                    ->collapsible(false)
-                                    ->columns(1),
-
-                                Forms\Components\Section::make(__('Arabic Content'))
-                                    ->schema([
-                                        Forms\Components\TextInput::make('name_ar')
+                                            Forms\Components\TextInput::make('name_ar')
                                             ->label(__('Name'))
                                             ->required()
                                             ->maxLength(255),
-
-                                        Forms\Components\RichEditor::make('description_ar')
-                                            ->label(__('Description'))
-                                            ->toolbarButtons([
-                                                'bold',
-                                                'italic',
-                                                'bulletList',
-                                                'orderedList',
-                                                'link',
-                                            ])
-                                            ->columnSpanFull(),
                                     ])
-                                    ->collapsible()
+                                    ->collapsible(false)
                                     ->columns(1),
 
                                 Forms\Components\Section::make(__('Category Structure'))
@@ -369,8 +339,6 @@ class ProductResource extends Resource
                                 return ProductCategory::create([
                                     'name_en' => $data['name_en'],
                                     'name_ar' => $data['name_ar'],
-                                    'description_en' => $data['description_en'],
-                                    'description_ar' => $data['description_ar'],
                                     'slug' => $data['slug'],
                                     'company_id' => $data['company_id'],
                                     'point_of_sale_id' => $data['point_of_sale_id'],

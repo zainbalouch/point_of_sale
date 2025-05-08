@@ -42,7 +42,6 @@ class ProductCategoryResource extends Resource
                                 if ($operation !== 'create') {
                                     return;
                                 }
-
                                 $set('slug', Str::slug($state));
                             }),
 
@@ -167,9 +166,9 @@ class ProductCategoryResource extends Resource
                                 $user = Filament::auth()->user();
                                 return $user && $user->point_of_sale_id;
                             })
+                            ->required()
                             ->dehydrated(true)
                             ->searchable()
-                            ->nullable()
                             ->placeholder(__('Select Point of Sale'))
                             ->helperText(__('Optional: Associate this category with a specific point of sale')),
                     ])
