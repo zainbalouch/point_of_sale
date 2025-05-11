@@ -91,17 +91,17 @@ class InvoiceTemplateSettingResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('value_en')
-                    ->label(__('Value (English)'))
-                    ->html()
-                    ->limit(50)
-                    ->searchable(),
+                // Tables\Columns\TextColumn::make('value_en')
+                //     ->label(__('Value (English)'))
+                //     ->formatStateUsing(fn ($state) => strip_tags($state))
+                //     ->limit(50)
+                //     ->searchable(),
 
-                Tables\Columns\TextColumn::make('value_ar')
-                    ->label(__('Value (Arabic)'))
-                    ->html()
-                    ->limit(50)
-                    ->searchable(),
+                // Tables\Columns\TextColumn::make('value_ar')
+                //     ->label(__('Value (Arabic)'))
+                //     ->formatStateUsing(fn ($state) => strip_tags($state))
+                //     ->limit(50)
+                //     ->searchable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created At'))
