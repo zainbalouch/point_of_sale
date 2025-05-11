@@ -17,6 +17,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
@@ -67,11 +68,23 @@ class UserResource extends Resource
                 Select::make('company_id')
                     ->label(__('Company'))
                     ->relationship('company', 'legal_name')
-                    ->required()
+                    ->required(function (Forms\Get $get) {
+                        $roles = $get('roles');
+                        $roleNames = Role::whereIn('id', $roles)->pluck('name')->toArray();
+                        $hasSuperAdmin = in_array('super_admin', $roleNames);
+                        $isOnlySuperAdmin = count($roleNames) === 1 && $hasSuperAdmin;
+                        return !$isOnlySuperAdmin;
+                    })
                     ->live(),
                 Select::make('point_of_sale_id')
                     ->label(__('Point of Sale'))
-                    ->required()
+                    ->required(function (Forms\Get $get) {
+                        $roles = $get('roles');
+                        $roleNames = Role::whereIn('id', $roles)->pluck('name')->toArray();
+                        $hasSuperAdmin = in_array('super_admin', $roleNames);
+                        $isOnlySuperAdmin = count($roleNames) === 1 && $hasSuperAdmin;
+                        return !$isOnlySuperAdmin;
+                    })
                     ->options(function (Forms\Get $get) {
                         $companyId = $get('company_id');
                         if (!$companyId) {
@@ -90,7 +103,8 @@ class UserResource extends Resource
                     ->multiple()
                     ->preload()
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->live(),
             ]);
     }
 
