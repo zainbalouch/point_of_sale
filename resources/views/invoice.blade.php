@@ -364,8 +364,8 @@
         <header>
             <div class="row align-items-center gy-3 mt-2 pb-1">
                 <div class="col-5 position-absolute top-0 mt-1 ms-3 start-0 margin-auto text-center invoice-text-start">
-                    <img id="logo" class="logo m-0 rounded shadow" src="{{ asset('storage/' . $logo) }}" title="Koice"
-                        alt="Koice" />
+                    <img id="logo" class="logo m-0 rounded shadow" src="{{ asset('storage/' . $logo) }}"
+                        title="Koice" alt="Koice" />
                 </div>
                 <div class="col-12 text-center invoice-text-end">
                     <h6 class="text-7 mb-0 text-center">{{ __('VAT Invoice') }}</h6>
@@ -387,5 +387,24 @@
     window.onafterprint = function() {
         document.title = "{{ config('app.name') }}";
     };
+
+    // Reset title after printing and close page on mobile
+    // window.onafterprint = function() {
+    //     document.title = "{{ config('app.name') }}";
+
+    //     // Check if device is mobile
+    //     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    //         window.close();
+    //     }
+    // };
+
+
+    // Open print preview after 1 second
+    window.onload = function() {
+        setTimeout(function() {
+            window.print();
+        }, 1000);
+    };
 </script>
+
 </html>

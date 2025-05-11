@@ -376,9 +376,21 @@
             document.title = "{{ $order->number }}";
         };
 
-        // Reset title after printing
-        window.onafterprint = function() {
-            document.title = "{{ config('app.name') }}";
+        // Reset title after printing and close page on mobile
+        // window.onafterprint = function() {
+        //     document.title = "{{ config('app.name') }}";
+
+        //     // Check if device is mobile
+        //     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        //         window.close();
+        //     }
+        // };
+
+        // Open print preview after 1 second
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 1000);
         };
     </script>
 </body>
