@@ -605,31 +605,4 @@ class ProductResource extends Resource
         $set('sale_price', round($salePrice, 2));
     }
 
-    public static function canDelete(Model $record): bool
-    {
-        $user = Filament::auth()->user();
-        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        $user = Filament::auth()->user();
-        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
-    }
-
-    public static function canView(Model $record): bool
-    {
-        $user = Filament::auth()->user();
-        return !$user->point_of_sale_id || $record->point_of_sale_id === $user->point_of_sale_id;
-    }
-
-    public static function canCreate(): bool
-    {
-        return true;
-    }
-
-    public static function canAccess(): bool
-    {
-        return true;
-    }
 }

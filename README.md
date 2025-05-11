@@ -1,8 +1,57 @@
 # Invoices Manager
 
-## System Setup Guide
+## Project Setup Guide
 
-### Initial Configuration Process
+### Initial Setup Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone [repository-url]
+   cd [project-directory]
+   ```
+
+2. **Install dependencies**
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. **Environment Setup**
+   - Copy `.env.example` to `.env`
+   - Configure your database settings in `.env`
+   - Generate application key:
+     ```bash
+     php artisan key:generate
+     ```
+
+4. **Database Setup**
+   ```bash
+   php artisan migrate
+   ```
+
+5. **Create Super Admin**
+   ```bash
+   php artisan shield:super-admin
+   ```
+
+6. **Generate Permissions**
+   ```bash
+   php artisan shield:generate --option=permissions --all
+   ```
+
+7. **Seed Permissions**
+   ```bash
+   php artisan db:seed --class=ShieldSeeder
+   ```
+
+8. **Seed Initial Data**
+   ```bash
+   php artisan db:seed --class=initialDataSeeder
+   ```
+
+### System Configuration
+
+After completing the setup, you can now:
 
 1. **Login as Super Admin**
    - Use the super admin credentials to access the system

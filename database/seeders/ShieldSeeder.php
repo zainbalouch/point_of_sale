@@ -15,6 +15,9 @@ class ShieldSeeder extends Seeder
         // Get all permissions
         $permissions = \Spatie\Permission\Models\Permission::all()->pluck('name')->toArray();
 
+        // Debug information
+        $this->command->info('Found ' . count($permissions) . ' permissions in the database.');
+
         $rolesWithPermissions = json_encode([
             [
                 'name' => 'super_admin',
@@ -27,6 +30,15 @@ class ShieldSeeder extends Seeder
 
         static::makeRolesWithPermissions($rolesWithPermissions);
         static::makeDirectPermissions($directPermissions);
+
+        // Verify the role has permissions
+        $role = \Spatie\Permission\Models\Role::where('name', 'super_admin')->first();
+        if ($role) {
+            $rolePermissions = $role->permissions->pluck('name')->toArray();
+            $this->command->info('Super Admin role has ' . count($rolePermissions) . ' permissions assigned.');
+        } else {
+            $this->command->error('Super Admin role not found!');
+        }
 
         $this->command->info('Shield Seeding Completed.');
     }
