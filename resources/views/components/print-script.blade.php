@@ -1,39 +1,59 @@
 @once
     <script>
         function openPrintPreview(url) {
-            // For desktop browsers, use iframe approach
-            const existingIframe = document.querySelector('iframe[style*="visibility: hidden"]');
-            if (existingIframe) {
-                existingIframe.remove();
+            // Check if it's a mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // For mobile devices, open in new window and print
+                const printWindow = window.open(url, '_blank');
+                printWindow.onload = function() {
+                    // Add print-specific styles
+                    const style = printWindow.document.createElement('style');
+                    style.textContent = `
+                        @media print {
+                            body {
+                                background-color: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                            * {
+                                background-color: transparent !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                            header {
+                                background-color: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                            img {
+                                background-color: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                        }
+                    `;
+                    printWindow.document.head.appendChild(style);
+                    printWindow.print();
+                };
+            } else {
+                // For desktop browsers, use iframe approach
+                const existingIframe = document.querySelector('iframe[style*="visibility: hidden"]');
+                if (existingIframe) {
+                    existingIframe.remove();
+                }
+
+                var iframe = document.createElement('iframe');
+                iframe.style.visibility = 'hidden';
+                document.body.appendChild(iframe);
+
+                iframe.src = url;
+
+                // iframe.onload = function() {
+                //     iframe.contentWindow.print();
+                // };
             }
-
-            var iframe = document.createElement('iframe');
-            iframe.style.visibility = 'hidden';
-
-            document.body.appendChild(iframe);
-
-            iframe.src = url;
-
-            // iframe.onload = function() {
-            //     iframe.contentWindow.print();
-
-            //     setTimeout(function() {
-            //         document.body.removeChild(iframe);
-            //     }, 2000);
-            // };
-        }
-
-        function downloadPDF(url) {
-            // Create a temporary link element
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            link.download = 'invoice.pdf';
-
-            // Append to body, click and remove
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
     </script>
     @if (session()->has('created_invoice_id'))
@@ -41,16 +61,8 @@
             $createdInvoiceId = session()->get('created_invoice_id');
         @endphp
         <script>
-            // Check if it's a mobile device
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-            if (isMobile) {
-                // For mobile devices, use direct download
-                downloadPDF(@json(route('invoice.show', $createdInvoiceId)));
-            } else {
-                // For desktop, use print preview
-                openPrintPreview(@json(route('invoice.show', $createdInvoiceId)));
-            }
+            openPrintPreview(@json(route('invoice.show', $createdInvoiceId)));
         </script>
     @endif
 @endonce
+
