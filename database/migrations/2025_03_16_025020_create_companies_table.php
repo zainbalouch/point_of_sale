@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('legal_name')->unique();
             $table->string('tax_number')->unique();
             $table->string('website')->nullable();
-            $table->string('email')->unique();
-            $table->string('phone_number')->unique();
+            $table->string('email')->unique()->nullable();
+            $table->string('phone_number')->unique()->nullable();
             $table->string('logo')->nullable();
             $table->boolean('is_active')->default(true);
             $table->json('meta')->nullable(); // For extensibility

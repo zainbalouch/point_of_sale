@@ -32,7 +32,6 @@ class SettingPolicy
     public function create(User $user): bool
     {
         return $user->can('create_setting');
-        // return false;
     }
 
     /**
@@ -49,7 +48,6 @@ class SettingPolicy
     public function delete(User $user, Setting $setting): bool
     {
         return $user->can('delete_setting');
-        // return false;
     }
 
     /**
@@ -57,8 +55,7 @@ class SettingPolicy
      */
     public function deleteAny(User $user): bool
     {
-        // return $user->can('delete_any_setting');
-        return false;
+        return $user->can('delete_any_setting');
     }
 
     /**
@@ -66,8 +63,7 @@ class SettingPolicy
      */
     public function forceDelete(User $user, Setting $setting): bool
     {
-        // return $user->can('force_delete_setting');
-        return false;
+        return $user->can('force_delete_setting');
     }
 
     /**
@@ -75,8 +71,7 @@ class SettingPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        // return $user->can('force_delete_any_setting');
-        return false;
+        return $user->can('force_delete_any_setting');
     }
 
     /**
