@@ -29,7 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->topNavigation()
-            ->brandName('Alyaa')
+            ->brandName(env('APP_NAME'))
             ->unsavedChangesAlerts()
             ->brandLogo(asset('assets/images/start-dark-logo.jpg'))
             ->brandLogoHeight('3rem')

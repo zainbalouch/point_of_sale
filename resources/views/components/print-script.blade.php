@@ -1,18 +1,20 @@
 @once
     <script>
         function openPrintPreview(url) {
+            // Remove any existing print iframe
+            const existingIframe = document.querySelector('iframe[style*="visibility: hidden"]');
+            if (existingIframe) {
+                existingIframe.remove();
+            }
+
             var iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
+            iframe.style.visibility = 'hidden';
             document.body.appendChild(iframe);
 
             iframe.src = url;
 
             iframe.onload = function() {
                 iframe.contentWindow.print();
-
-                setTimeout(function() {
-                    document.body.removeChild(iframe);
-                }, 2000);
             };
         }
     </script>

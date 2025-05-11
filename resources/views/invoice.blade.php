@@ -76,7 +76,7 @@
         .header {
             min-width: 728px;
             position: fixed;
-            top: 0;
+            top: 5px;
         }
 
         .footer {
@@ -91,8 +91,10 @@
 
         .logo {
             width: auto;
+            height: auto;
             margin: 10px;
             max-height: 70px;
+            max-width: 100px;
         }
 
         /* Darker table borders */
@@ -360,9 +362,9 @@
     </table>
     <div class="header">
         <header>
-            <div class="row align-items-center gy-3 mt-2">
+            <div class="row align-items-center gy-3 mt-2 pb-1">
                 <div class="col-5 position-absolute top-0 mt-1 ms-3 start-0 margin-auto text-center invoice-text-start">
-                    <img id="logo" class="logo m-0" src="{{ asset('storage/' . $logo) }}" title="Koice"
+                    <img id="logo" class="logo m-0 rounded shadow" src="{{ asset('storage/' . $logo) }}" title="Koice"
                         alt="Koice" />
                 </div>
                 <div class="col-12 text-center invoice-text-end">
@@ -375,5 +377,15 @@
     <div class="footer">
     </div>
 </body>
+<script>
+    // Set filename when printing
+    window.onbeforeprint = function() {
+        document.title = "{{ $order->number }}";
+    };
 
+    // Reset title after printing
+    window.onafterprint = function() {
+        document.title = "{{ config('app.name') }}";
+    };
+</script>
 </html>
