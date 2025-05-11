@@ -50,9 +50,9 @@
 
                 iframe.src = url;
 
-                // iframe.onload = function() {
-                //     iframe.contentWindow.print();
-                // };
+                iframe.onload = function() {
+                    iframe.contentWindow.print();
+                };
             }
         }
     </script>

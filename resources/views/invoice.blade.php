@@ -400,11 +400,11 @@
 
 
     // Open print preview after 1 second
-    window.onload = function() {
-        setTimeout(function() {
-            window.print();
-        }, 1000);
-    };
+    // window.onload = function() {
+    //     setTimeout(function() {
+    //         window.print();
+    //     }, 1000);
+    // };
 </script>
 
 </html>
