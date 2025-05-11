@@ -173,6 +173,7 @@ class CustomerResource extends Resource
 
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('Email'))
+                    ->required()
                     ->searchable()
                     ->sortable(),
 
