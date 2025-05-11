@@ -22,8 +22,13 @@
                                 -webkit-print-color-adjust: exact !important;
                                 print-color-adjust: exact !important;
                             }
+                            header {
+                                background-color: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
                             img {
-                                background-color: transparent !important;
+                                background-color: white !important;
                                 -webkit-print-color-adjust: exact !important;
                                 print-color-adjust: exact !important;
                             }
