@@ -200,7 +200,7 @@ class InvoiceResource extends Resource
                         TextInput::make('amount_paid')
                             ->label(__('Already Paid'))
                             ->numeric()
-                            ->readOnly()
+                            ->disabled()
                             ->dehydrated(true)
                             ->afterStateHydrated(function ($state, Forms\Set $set) {
                                 $set('amount_paid', $state);

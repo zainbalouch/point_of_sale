@@ -19,8 +19,8 @@ return new class extends Migration
             $table->foreignId('point_of_sale_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->foreignId('issued_by_user')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('customer_name');
-            $table->string('customer_email');
+            $table->string('customer_name')->nullable();
+            $table->string('customer_email')->nullable();
             $table->string('customer_phone')->nullable();
             $table->unsignedBigInteger('subtotal');
             $table->unsignedBigInteger('discount')->default(0);

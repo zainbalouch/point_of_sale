@@ -72,7 +72,6 @@ class CustomerResource extends Resource
                             ->schema([
                                 TextInput::make('email')
                                     ->label(__('Email'))
-                                    ->required()
                                     ->email()
                                     ->maxLength(255)
                                     ->unique(ignoreRecord: true),
