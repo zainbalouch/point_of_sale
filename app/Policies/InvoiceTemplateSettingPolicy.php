@@ -47,7 +47,8 @@ class InvoiceTemplateSettingPolicy
      */
     public function delete(User $user, InvoiceTemplateSetting $invoiceTemplateSetting): bool
     {
-        return $user->can('delete_invoice::template::setting');
+        // return $user->can('delete_invoice::template::setting');
+        return false;
     }
 
     /**
