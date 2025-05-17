@@ -456,13 +456,13 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 3,
-                'key_name' => 'show_customer_email',
-                'field_type' => 'checkbox',
+                'key_name' => 'logo',
+                'field_type' => 'image',
                 'company_id' => 1,
-                'value_en' => '1',
-                'value_ar' => '1',
-                'created_at' => '2025-05-17 07:33:09',
-                'updated_at' => '2025-05-17 08:32:39'
+                'value_en' => 'settings/01JVEK010YFD6JK6JGFX0TRN17.jpeg',
+                'value_ar' => 'settings/01JVEK0112P8YVDQKD1F74ABWD.jpeg',
+                'created_at' => '2025-05-17 07:40:33',
+                'updated_at' => '2025-05-17 07:40:33'
             ],
             [
                 'id' => 4,
@@ -546,13 +546,13 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 12,
-                'key_name' => 'logo',
-                'field_type' => 'image',
+                'key_name' => 'show_customer_email',
+                'field_type' => 'checkbox',
                 'company_id' => 1,
-                'value_en' => 'settings/01JVEK010YFD6JK6JGFX0TRN17.jpeg',
-                'value_ar' => 'settings/01JVEK0112P8YVDQKD1F74ABWD.jpeg',
-                'created_at' => '2025-05-17 07:40:33',
-                'updated_at' => '2025-05-17 07:40:33'
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:33:09',
+                'updated_at' => '2025-05-17 08:32:39'
             ],
             [
                 'id' => 13,
