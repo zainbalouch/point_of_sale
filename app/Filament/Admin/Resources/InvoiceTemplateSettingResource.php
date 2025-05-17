@@ -73,41 +73,34 @@ class InvoiceTemplateSettingResource extends Resource
                                 return match ($fieldType) {
                                     'text' => [
                                         TextInput::make('value_en')
-                                            ->label(__('Value (English)'))
-                                            ->required(),
+                                            ->label(__('Value (English)')),
                                     ],
                                     'text_area' => [
                                         Forms\Components\Textarea::make('value_en')
                                             ->label(__('Value (English)'))
-                                            ->rows(5)
-                                            ->required(),
+                                            ->rows(5),
                                     ],
                                     'rich_text_editor' => [
                                         RichEditor::make('value_en')
-                                            ->label(__('Value (English)'))
-                                            ->required(),
+                                            ->label(__('Value (English)')),
                                     ],
                                     'image' => [
                                         Forms\Components\FileUpload::make('value_en')
                                             ->label(__('Value (English)'))
                                             ->image()
-                                            ->directory('settings')
-                                            ->required(),
+                                            ->directory('settings'),
                                     ],
                                     'color_picker' => [
                                         Forms\Components\ColorPicker::make('value_en')
-                                            ->label(__('Value (English)'))
-                                            ->required(),
+                                            ->label(__('Value (English)')),
                                     ],
                                     'date' => [
                                         Forms\Components\DatePicker::make('value_en')
-                                            ->label(__('Value (English)'))
-                                            ->required(),
+                                            ->label(__('Value (English)')),
                                     ],
                                     'time' => [
                                         Forms\Components\TimePicker::make('value_en')
-                                            ->label(__('Value (English)'))
-                                            ->required(),
+                                            ->label(__('Value (English)')),
                                     ],
                                     'day' => [
                                         Select::make('value_en')
@@ -120,8 +113,7 @@ class InvoiceTemplateSettingResource extends Resource
                                                 '4' => __('Thursday'),
                                                 '5' => __('Friday'),
                                                 '6' => __('Saturday'),
-                                            ])
-                                            ->required(),
+                                            ]),
                                     ],
                                     'checkbox' => [
                                         Forms\Components\Checkbox::make('value_en')
@@ -130,8 +122,7 @@ class InvoiceTemplateSettingResource extends Resource
                                     ],
                                     default => [
                                         TextInput::make('value_en')
-                                            ->label(__('Value (English)'))
-                                            ->required(),
+                                            ->label(__('Value (English)')),
                                     ],
                                 };
                             }),
@@ -143,41 +134,34 @@ class InvoiceTemplateSettingResource extends Resource
                                 return match ($fieldType) {
                                     'text' => [
                                         TextInput::make('value_ar')
-                                            ->label(__('Value (Arabic)'))
-                                            ->required(),
+                                            ->label(__('Value (Arabic)')),
                                     ],
                                     'text_area' => [
                                         Forms\Components\Textarea::make('value_ar')
                                             ->label(__('Value (Arabic)'))
-                                            ->rows(5)
-                                            ->required(),
+                                            ->rows(5),
                                     ],
                                     'rich_text_editor' => [
                                         RichEditor::make('value_ar')
-                                            ->label(__('Value (Arabic)'))
-                                            ->required(),
+                                            ->label(__('Value (Arabic)')),
                                     ],
                                     'image' => [
                                         Forms\Components\FileUpload::make('value_ar')
                                             ->label(__('Value (Arabic)'))
                                             ->image()
-                                            ->directory('settings')
-                                            ->required(),
+                                            ->directory('settings'),
                                     ],
                                     'color_picker' => [
                                         Forms\Components\ColorPicker::make('value_ar')
-                                            ->label(__('Value (Arabic)'))
-                                            ->required(),
+                                            ->label(__('Value (Arabic)')),
                                     ],
                                     'date' => [
                                         Forms\Components\DatePicker::make('value_ar')
-                                            ->label(__('Value (Arabic)'))
-                                            ->required(),
+                                            ->label(__('Value (Arabic)')),
                                     ],
                                     'time' => [
                                         Forms\Components\TimePicker::make('value_ar')
-                                            ->label(__('Value (Arabic)'))
-                                            ->required(),
+                                            ->label(__('Value (Arabic)')),
                                     ],
                                     'day' => [
                                         Select::make('value_ar')
@@ -190,8 +174,7 @@ class InvoiceTemplateSettingResource extends Resource
                                                 '4' => __('Thursday'),
                                                 '5' => __('Friday'),
                                                 '6' => __('Saturday'),
-                                            ])
-                                            ->required(),
+                                            ]),
                                     ],
                                     'checkbox' => [
                                         Forms\Components\Checkbox::make('value_ar')
@@ -200,8 +183,7 @@ class InvoiceTemplateSettingResource extends Resource
                                     ],
                                     default => [
                                         TextInput::make('value_ar')
-                                            ->label(__('Value (Arabic)'))
-                                            ->required(),
+                                            ->label(__('Value (Arabic)')),
                                     ],
                                 };
                             }),
