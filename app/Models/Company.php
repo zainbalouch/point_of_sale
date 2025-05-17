@@ -25,6 +25,7 @@ class Company extends Model
         'website',
         'email',
         'phone_number',
+        'address',
         'logo',
         'is_active',
         'meta',
@@ -63,7 +64,7 @@ class Company extends Model
     {
         return $this->hasMany(Order::class);
     }
-    
+
     /**
      * Get the addresses associated with the company.
      */

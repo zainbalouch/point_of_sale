@@ -16,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Get;
 
 class InvoiceTemplateSettingResource extends Resource
 {
@@ -29,24 +30,14 @@ class InvoiceTemplateSettingResource extends Resource
         $hasCompany = $user && $user->company_id;
 
         return $form
-            ->columns([
-                'default' => 1,
-                'sm' => 3,
-                'lg' => 3,
-            ])
             ->schema([
                 Section::make(__('Invoice Template Setting'))
-                    ->columnSpan([
-                        'default' => 1,
-                        'sm' => 3,
-                        'lg' => 3,
-                    ])
                     ->schema([
                         TextInput::make('key_name')
                             ->label(__('Key Name'))
                             ->required()
                             ->maxLength(255)
-                            ->disabled(fn ($get) => $get('id') !== null)
+                            ->disabled(fn ($record) => $record !== null)
                             ->dehydrated(true),
 
                         Select::make('company_id')
@@ -58,21 +49,162 @@ class InvoiceTemplateSettingResource extends Resource
                             ->required()
                             ->searchable(),
 
-                        RichEditor::make('value_en')
-                            ->label(__('Value (English)'))
-                            ->columnSpan([
-                                'default' => 1,
-                                'sm' => 3,
-                                'lg' => 3,
-                            ]),
+                        Select::make('field_type')
+                            ->label(__('Field Type'))
+                            ->options([
+                                'text' => __('Text'),
+                                'text_area' => __('Text Area'),
+                                'rich_text_editor' => __('Rich Text Editor'),
+                                'image' => __('Image'),
+                                'color_picker' => __('Color Picker'),
+                                'date' => __('Date'),
+                                'time' => __('Time'),
+                                'day' => __('Day of Week'),
+                                'checkbox' => __('Checkbox'),
+                            ])
+                            ->default('text')
+                            ->required()
+                            ->live(),
 
-                        RichEditor::make('value_ar')
-                            ->label(__('Value (Arabic)'))
-                            ->columnSpan([
-                                'default' => 1,
-                                'sm' => 3,
-                                'lg' => 3,
-                            ]),
+                        Section::make(__('English Value'))
+                            ->schema(function (Get $get) {
+                                $fieldType = $get('field_type');
+
+                                return match ($fieldType) {
+                                    'text' => [
+                                        TextInput::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->required(),
+                                    ],
+                                    'text_area' => [
+                                        Forms\Components\Textarea::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->rows(5)
+                                            ->required(),
+                                    ],
+                                    'rich_text_editor' => [
+                                        RichEditor::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->required(),
+                                    ],
+                                    'image' => [
+                                        Forms\Components\FileUpload::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->image()
+                                            ->directory('settings')
+                                            ->required(),
+                                    ],
+                                    'color_picker' => [
+                                        Forms\Components\ColorPicker::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->required(),
+                                    ],
+                                    'date' => [
+                                        Forms\Components\DatePicker::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->required(),
+                                    ],
+                                    'time' => [
+                                        Forms\Components\TimePicker::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->required(),
+                                    ],
+                                    'day' => [
+                                        Select::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->options([
+                                                '0' => __('Sunday'),
+                                                '1' => __('Monday'),
+                                                '2' => __('Tuesday'),
+                                                '3' => __('Wednesday'),
+                                                '4' => __('Thursday'),
+                                                '5' => __('Friday'),
+                                                '6' => __('Saturday'),
+                                            ])
+                                            ->required(),
+                                    ],
+                                    'checkbox' => [
+                                        Forms\Components\Checkbox::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->default(false),
+                                    ],
+                                    default => [
+                                        TextInput::make('value_en')
+                                            ->label(__('Value (English)'))
+                                            ->required(),
+                                    ],
+                                };
+                            }),
+
+                        Section::make(__('Arabic Value'))
+                            ->schema(function (Get $get) {
+                                $fieldType = $get('field_type');
+
+                                return match ($fieldType) {
+                                    'text' => [
+                                        TextInput::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->required(),
+                                    ],
+                                    'text_area' => [
+                                        Forms\Components\Textarea::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->rows(5)
+                                            ->required(),
+                                    ],
+                                    'rich_text_editor' => [
+                                        RichEditor::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->required(),
+                                    ],
+                                    'image' => [
+                                        Forms\Components\FileUpload::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->image()
+                                            ->directory('settings')
+                                            ->required(),
+                                    ],
+                                    'color_picker' => [
+                                        Forms\Components\ColorPicker::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->required(),
+                                    ],
+                                    'date' => [
+                                        Forms\Components\DatePicker::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->required(),
+                                    ],
+                                    'time' => [
+                                        Forms\Components\TimePicker::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->required(),
+                                    ],
+                                    'day' => [
+                                        Select::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->options([
+                                                '0' => __('Sunday'),
+                                                '1' => __('Monday'),
+                                                '2' => __('Tuesday'),
+                                                '3' => __('Wednesday'),
+                                                '4' => __('Thursday'),
+                                                '5' => __('Friday'),
+                                                '6' => __('Saturday'),
+                                            ])
+                                            ->required(),
+                                    ],
+                                    'checkbox' => [
+                                        Forms\Components\Checkbox::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->default(false),
+                                    ],
+                                    default => [
+                                        TextInput::make('value_ar')
+                                            ->label(__('Value (Arabic)'))
+                                            ->required(),
+                                    ],
+                                };
+                            }),
                     ]),
             ]);
     }
@@ -86,14 +218,41 @@ class InvoiceTemplateSettingResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('company.legal_name')
-                    ->label(__('Company'))
-                    ->searchable()
+                // Tables\Columns\TextColumn::make('company.legal_name')
+                //     ->label(__('Company'))
+                //     ->searchable()
+                //     ->sortable(),
+
+                // Tables\Columns\TextColumn::make('field_type')
+                //     ->label(__('Field Type'))
+                //     ->searchable()
+                //     ->sortable(),
+
+                Tables\Columns\TextColumn::make('value_en')
+                    ->label(__('Value (English)'))
+                    ->html()
+                    ->formatStateUsing(function ($state, $record) {
+                        if ($record->field_type === 'rich_text_editor') {
+                            return $state;
+                        } elseif ($record->field_type === 'image') {
+                            return view('components.image-preview', ['url' => $state])->render();
+                        }
+                        return $state;
+                    })
+                    ->lineClamp(1)
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('value_' . app()->getLocale())
-                    ->label(__('Value'))
+                Tables\Columns\TextColumn::make('value_ar')
+                    ->label(__('Value (Arabic)'))
                     ->html()
+                    ->formatStateUsing(function ($state, $record) {
+                        if ($record->field_type === 'rich_text_editor') {
+                            return $state;
+                        } elseif ($record->field_type === 'image') {
+                            return view('components.image-preview', ['url' => $state])->render();
+                        }
+                        return $state;
+                    })
                     ->lineClamp(1)
                     ->sortable(),
 

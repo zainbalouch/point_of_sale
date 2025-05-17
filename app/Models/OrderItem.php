@@ -58,6 +58,53 @@ class OrderItem extends Model
         $this->attributes['unit_price'] = $value * 100;
     }
 
+    public function getTotalPriceAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    /**
+     * Set the unit price attribute.
+     * Convert from decimal to integer value (cents) for storage.
+     */
+    public function setTotalPriceAttribute($value)
+    {
+        $this->attributes['total_price'] = $value * 100;
+    }
+
+    public function getVatAmountAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    /**
+     * Set the unit price attribute.
+     * Convert from decimal to integer value (cents) for storage.
+     */
+    public function setVatAmountAttribute($value)
+    {
+        $this->attributes['vat_amount'] = $value * 100;
+    }
+
+    public function getOtherTaxesAmountAttribute($value)
+    {
+        return $value / 100;
+    }
+    public function setOtherTaxesAmountAttribute($value)
+    {
+        $this->attributes['other_taxes_amount'] = $value * 100;
+    }
+
+    public function getDiscountAmountAttribute($value)
+    {
+        return $value / 100;
+    }
+    public function setDiscountAmountAttribute($value)
+    {
+        $this->attributes['discount_amount'] = $value * 100;
+    }
+
+
     /**
      * Get the order that owns the item.
      */

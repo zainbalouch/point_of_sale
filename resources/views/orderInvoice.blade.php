@@ -1,16 +1,25 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+@php
+    if (app()->getLocale() == 'ar') {
+       $isArabic = true;
+    } else {
+       $isArabic = false;
+    }
+
+@endphp
+<html lang="{{ app()->getLocale() }}" dir="{{ $isArabic ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Stylesheet
+======================= -->
     @if (app()->getLocale() == 'ar')
         <link href="/assets/css/bootstrap.rtl.min.css" rel="stylesheet">
     @else
         <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/bootstrap.css') }}">
     @endif
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/invoice.css') }}" />
-    @if (app()->getLocale() === 'ar')
+    @if ($isArabic)
         <style>
             body {
                 font-family: 'Poppins', 'Tahoma', sans-serif;
@@ -45,15 +54,22 @@
         </style>
     @endif
 
+    <!-- Print Styles for Header on Each Page -->
     <style>
         @media print {
-            @page {
-                size: A4;
-                margin-top: 0;
-                margin-bottom: 0;
-            }
+            @if ($isArabic)
+                @page {
+                    size: auto;
+                    margin: 10mm 4mm 10mm 4mm;
+                }
+            @else
+                @page {
+                    size: auto;
+                    margin: 10mm 16mm 10mm 16mm;
+                }
+            @endif
 
-            /* This class will be repeated on each page */
+
             .header-print {
                 display: table-header-group;
             }
@@ -68,7 +84,7 @@
         .header-space,
         .footer,
         .footer-space {
-            height: 100px;
+            height: 200px;
         }
 
         .header {
@@ -83,7 +99,7 @@
             bottom: 0;
         }
 
-        table {
+        .mainTable {
             min-width: 728px;
         }
 
@@ -91,7 +107,7 @@
             width: auto;
             height: auto;
             margin: 10px;
-            max-height: 70px;
+            max-height: 85px;
             max-width: 100px;
         }
 
@@ -117,7 +133,7 @@
 </head>
 
 <body>
-    <table>
+    <table class="mainTable">
         <thead>
             <tr>
                 <td>
@@ -129,53 +145,6 @@
             <tr>
                 <td>
                     <main>
-                        <div class="row">
-                            <div class="col-6"><strong>{{ __('Date') }}:</strong>
-                                @if (app()->getLocale() === 'ar')
-                                    {{ isset($order->issue_date) ? $order->issue_date : $order->created_at->format('Y/m/d') }}
-                                @else
-                                    {{ isset($order->issue_date) ? $order->issue_date : $order->created_at->format('Y/m/d') }}
-                                @endif
-                            </div>
-                            <div class="col-6 invoice-text-end"> <strong>{{ __('Order No') }}:</strong>
-                                {{ $order->number }}
-                            </div>
-
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-6 order-1"> <strong>{{ __('Pay To') }}:</strong>
-                                <address>
-                                    {{-- {{ $order->company->legal_name }}<br /> --}}
-                                    @if ($order->pointOfSale)
-                                        {{ $order->pointOfSale->{'name_' . app()->getLocale()} }}<br />
-                                    @endif
-                                    @if ($order->company->addresses->isNotEmpty())
-                                        {{ $order->company->addresses->first()->street }}<br />
-                                        {{ $order->company->addresses->first()->postal_code ?? '' }}
-                                        {{ $order->company->addresses->first()->country->name ?? '' }}<br />
-                                    @endif
-                                    {{ $order->company->email }} <br>
-                                    {{ $order->company->tax_number }}
-                                </address>
-                            </div>
-                            <div class="col-6 order-0"> <strong>{{ __('Invoiced To') }}:</strong>
-                                <address>
-                                    @if ($order->customer)
-                                        {{ $order->customer->full_name }}<br />
-                                        @if ($order->customer->address)
-                                            {{ $order->customer->address }}<br />
-                                        @endif
-                                        {{-- {{ $order->customer->email }}<br /> --}}
-                                        {{ $order->customer->phone_number }}
-                                    @else
-                                        {{ $order->customer_name ?? 'N/A' }}<br />
-                                        {{-- {{ $order->customer_email ?? '' }}<br /> --}}
-                                        {{ $order->customer_phone_number ?? '' }}
-                                    @endif
-                                </address>
-                            </div>
-                        </div>
                         <div class="table-responsive">
                             <table class="table border mb-0">
                                 <thead>
@@ -333,7 +302,6 @@
                             </div>
                         </div>
                     </main>
-                    <!-- Footer -->
                     <div class="invoice-text-start mt-4">
                         <div class="mt-3 policy-section invoice-text-start">
 
@@ -355,44 +323,92 @@
     </table>
     <div class="header">
         <header>
-            <div class="row align-items-center gy-3 mt-2 pb-1">
-                <div class="col-5 position-absolute top-0 mt-1 ms-3 start-0 margin-auto text-center invoice-text-start">
-                    <img id="logo" class="logo m-0 rounded shadow" src="{{ asset('storage/' . $logo) }}" title="Koice"
-                        alt="Koice" />
+            <div class="row justify-content-between position-absolute top-0 px-0 start-0 margin-auto">
+                <div class="col-5">
+                    <div class=""> <strong>{{ __('Invoiced To') }}:</strong>
+                        <address>
+                            @if ($order->customer)
+                                {{ $order->customer->full_name }}<br />
+                                @if ($order->customer->address)
+                                    {{ $order->customer->address }}<br />
+                                @endif
+                                {{ $order->customer->phone_number }} <br>
+                                @if ($order->customer->vat_number)
+                                    {{ $order->customer->vat_number }}<br />
+                                @endif
+                            @else
+                                {{ $order->customer_name ?? 'N/A' }}<br />
+                                {{ $order->customer_phone_number ?? '' }}
+                            @endif
+                        </address>
+                    </div>
                 </div>
-                <div class="col-12 text-center invoice-text-end">
-                    <h4 class="text-7 text-center mb-0">{{ __('Taxable Order') }}</h4>
+                <div class="col-2">
+                    <div class="w-100 d-flex justify-content-center">
+                        <img id="logo" class="logo rounded" src="{{ asset('storage/' . $logo) }}"
+                            title="Koice" alt="Koice" />
+                    </div>
+                    <p class="text-center mt-1 fw-bold">{{ __('Taxable Order') }}</p>
+                </div>
+                <div class="col-5 {{ $isArabic ? 'pe-0' : '' }} invoice-text-end"> <strong>{{ __('Invoice No') }}:</strong>
+                    {{ $order->number }}
+                    <br>
+                    <strong>{{ __('Date') }}:</strong>
+                    @if ($isArabic)
+                        {{ isset($order->issue_date) ? $order->issue_date : $order->created_at->format('Y/m/d') }}
+                    @else
+                        {{ isset($order->issue_date) ? $order->issue_date : $order->created_at->format('d/m/Y') }}
+                    @endif
+                    <br>
+                    <div>
+                        <strong>{{ __('Pay To') }}:</strong>
+
+                        <address>
+                            @if ($order->pointOfSale)
+                                {{ $order->pointOfSale->{'name_' . app()->getLocale()} }}<br />
+                            @endif
+                            @if (isset($order->company->address) && $order->company->address != '')
+                                {{ $order->company->address }}<br />
+                            @endif
+                            {{ $order->company->email }} <br>
+                            {{ $order->company->tax_number }}
+                        </address>
+                    </div>
                 </div>
             </div>
-            <hr>
         </header>
     </div>
     <div class="footer">
     </div>
-
-    <script>
-        // Set filename when printing
-        window.onbeforeprint = function() {
-            document.title = "{{ $order->number }}";
-        };
-
-        // Reset title after printing and close page on mobile
-        // window.onafterprint = function() {
-        //     document.title = "{{ config('app.name') }}";
-
-        //     // Check if device is mobile
-        //     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        //         window.close();
-        //     }
-        // };
-
-        // Open print preview after 1 second
-        // window.onload = function() {
-        //     setTimeout(function() {
-        //         window.print();
-        //     }, 1000);
-        // };
-    </script>
 </body>
+<script>
+    // Set filename when printing
+    window.onbeforeprint = function() {
+        document.title = "{{ $order->number }}";
+    };
+
+    // Reset title after printing
+    window.onafterprint = function() {
+        document.title = "{{ config('app.name') }}";
+    };
+
+    // Reset title after printing and close page on mobile
+    // window.onafterprint = function() {
+    //     document.title = "{{ config('app.name') }}";
+
+    //     // Check if device is mobile
+    //     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    //         window.close();
+    //     }
+    // };
+
+
+    // Open print preview after 1 second
+    // window.onload = function() {
+    //     setTimeout(function() {
+    //         window.print();
+    //     }, 1000);
+    // };
+</script>
 
 </html>

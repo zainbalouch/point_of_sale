@@ -1,4 +1,12 @@
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+@php
+    if (app()->getLocale() == 'ar') {
+       $isArabic = true;
+    } else {
+       $isArabic = false;
+    }
+
+@endphp
+<html lang="{{ app()->getLocale() }}" dir="{{ $isArabic ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="utf-8" />
@@ -11,7 +19,7 @@
         <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/bootstrap.css') }}">
     @endif
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/invoice.css') }}" />
-    @if (app()->getLocale() === 'ar')
+    @if ($isArabic)
         <style>
             body {
                 font-family: 'Poppins', 'Tahoma', sans-serif;
@@ -49,11 +57,17 @@
     <!-- Print Styles for Header on Each Page -->
     <style>
         @media print {
-            @page {
-                size: A4;
-                margin-top: 0;
-                margin-bottom: 0;
-            }
+            @if ($isArabic)
+                @page {
+                    size: auto;
+                    margin: 10mm 4mm 10mm 4mm;
+                }
+            @else
+                @page {
+                    size: auto;
+                    margin: 10mm 16mm 10mm 16mm;
+                }
+            @endif
 
 
             .header-print {
@@ -70,7 +84,7 @@
         .header-space,
         .footer,
         .footer-space {
-            height: 100px;
+            height: 185px;
         }
 
         .header {
@@ -93,7 +107,7 @@
             width: auto;
             height: auto;
             margin: 10px;
-            max-height: 70px;
+            max-height: 85px;
             max-width: 100px;
         }
 
@@ -131,53 +145,7 @@
             <tr>
                 <td>
                     <main>
-                        <div class="row">
-                            <div class="col-6"><strong>{{ __('Date') }}:</strong>
-                                @if (app()->getLocale() === 'ar')
-                                    {{ isset($order->issue_date) ? $order->issue_date->format('Y/m/d') : $order->created_at->format('Y/m/d') }}
-                                @else
-                                    {{ isset($order->issue_date) ? $order->issue_date->format('d/m/Y') : $order->created_at->format('d/m/Y') }}
-                                @endif
-                            </div>
-                            <div class="col-6 invoice-text-end"> <strong>{{ __('Invoice No') }}:</strong>
-                                {{ $order->number }}
-                            </div>
 
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-6 order-1"> <strong>{{ __('Pay To') }}:</strong>
-                                <address>
-                                    {{-- {{ $order->company->legal_name }}<br /> --}}
-                                    @if ($order->pointOfSale)
-                                        {{ $order->pointOfSale->{'name_' . app()->getLocale()} }}<br />
-                                    @endif
-                                    @if ($order->company->addresses->isNotEmpty())
-                                        {{ $order->company->addresses->first()->street }}<br />
-                                        {{ $order->company->addresses->first()->postal_code ?? '' }}
-                                        {{ $order->company->addresses->first()->country->name ?? '' }}<br />
-                                    @endif
-                                    {{ $order->company->email }} <br>
-                                    {{ $order->company->tax_number }}
-                                </address>
-                            </div>
-                            <div class="col-6 order-0"> <strong>{{ __('Invoiced To') }}:</strong>
-                                <address>
-                                    @if ($order->customer)
-                                        {{ $order->customer->full_name }}<br />
-                                        @if ($order->customer->address)
-                                            {{ $order->customer->address }}<br />
-                                        @endif
-                                        {{-- {{ $order->customer->email }}<br /> --}}
-                                        {{ $order->customer->phone_number }}
-                                    @else
-                                        {{ $order->customer_name ?? 'N/A' }}<br />
-                                        {{-- {{ $order->customer_email ?? '' }}<br /> --}}
-                                        {{ $order->customer_phone_number ?? '' }}
-                                    @endif
-                                </address>
-                            </div>
-                        </div>
                         <div class="table-responsive">
                             <table class="table mb-0">
                                 <thead>
@@ -241,7 +209,7 @@
                                                 <strong>{{ __('Subtotal') }}:</strong>
                                             </td>
                                             <td class="col-6 invoice-text-end border-top-0">
-                                                @if (app()->getLocale() === 'ar')
+                                                @if ($isArabic)
                                                     {{ number_format($order->subtotal, 2) }}
                                                     {{ $order->currency->code ?? 'SAR' }}
                                                 @else
@@ -255,7 +223,7 @@
                                                 <td class="invoice-text-end"><strong>{{ __('Discount') }}:</strong>
                                                 </td>
                                                 <td class="col-6 invoice-text-end">
-                                                    @if (app()->getLocale() === 'ar')
+                                                    @if ($isArabic)
                                                         -{{ number_format($order->discount, 2) }}
                                                         {{ $order->currency->code ?? 'SAR' }}
                                                     @else
@@ -268,7 +236,7 @@
                                         <tr>
                                             <td class="invoice-text-end"><strong>{{ __('VAT') }}:</strong></td>
                                             <td class="col-6 invoice-text-end">
-                                                @if (app()->getLocale() === 'ar')
+                                                @if ($isArabic)
                                                     {{ number_format($order->vat, 2) }}
                                                     {{ $order->currency->code ?? 'SAR' }}
                                                 @else
@@ -282,7 +250,7 @@
                                                 <td class="invoice-text-end"><strong>{{ __('Other Taxes') }}:</strong>
                                                 </td>
                                                 <td class="col-6 invoice-text-end">
-                                                    @if (app()->getLocale() === 'ar')
+                                                    @if ($isArabic)
                                                         {{ number_format($order->other_taxes, 2) }}
                                                         {{ $order->currency->code ?? 'SAR' }}
                                                     @else
@@ -296,7 +264,7 @@
                                         <tr>
                                             <td class="invoice-text-end"><strong>{{ __('Total') }}:</strong></td>
                                             <td class="col-6 invoice-text-end">
-                                                @if (app()->getLocale() === 'ar')
+                                                @if ($isArabic)
                                                     {{ number_format($order->total, 2) }}
                                                     {{ $order->currency->code ?? 'SAR' }}
                                                 @else
@@ -308,7 +276,7 @@
                                         <tr>
                                             <td class="invoice-text-end"><strong>{{ __('Amount Paid') }}:</strong></td>
                                             <td class="col-6 invoice-text-end">
-                                                @if (app()->getLocale() === 'ar')
+                                                @if ($isArabic)
                                                     {{ number_format($order->amount_paid ?? 0, 2) }}
                                                     {{ $order->currency->code ?? 'SAR' }}
                                                 @else
@@ -326,7 +294,7 @@
                                                     <strong>{{ __('Amount Remaining') }}:</strong>
                                                 </td>
                                                 <td class="col-6 invoice-text-end">
-                                                    @if (app()->getLocale() === 'ar')
+                                                    @if ($isArabic)
                                                         {{ number_format($remaining, 2) }}
                                                         {{ $order->currency->code ?? 'SAR' }}
                                                     @else
@@ -361,18 +329,67 @@
         </tfoot>
     </table>
     <div class="header">
-        <header>
-            <div class="row align-items-center gy-3 mt-2 pb-1">
-                <div class="col-5 position-absolute top-0 mt-1 ms-3 start-0 margin-auto text-center invoice-text-start">
-                    <img id="logo" class="logo m-0 rounded shadow" src="{{ asset('storage/' . $logo) }}"
-                        title="Koice" alt="Koice" />
-                </div>
-                <div class="col-12 text-center invoice-text-end">
-                    <h6 class="text-7 mb-0 text-center">{{ __('VAT Invoice') }}</h6>
+        <div class="row w-100 mx-0 px-0 justify-content-between position-absolute top-0 px-0 start-0 margin-auto">
+            <div class="col-5">
+                <div class=""> <strong>{{ __('Invoiced To') }}:</strong>
+                    <address>
+                        @if ($order->customer)
+                            {{ $order->customer->full_name }}<br />
+                            @if ($order->customer->address && $show_customer_address)
+                                {{ $order->customer->address }}<br />
+                            @endif
+                            @if ($order->customer->phone_number && $show_customer_phone)
+                                {{ $order->customer->phone_number }} <br>
+                            @endif
+                            @if ($order->customer->vat_number && $show_customer_vat)
+                                {{ $order->customer->vat_number }}<br />
+                            @endif
+                        @else
+                            {{ $order->customer_name ?? 'N/A' }}<br />
+                            @if ($order->customer_phone_number && $show_customer_phone)
+                                {{ $order->customer_phone_number }}
+                            @endif
+                        @endif
+                    </address>
                 </div>
             </div>
-            <hr>
-        </header>
+            <div class="col-2">
+                <div class="w-100 d-flex justify-content-center">
+                    <img id="logo" class="logo rounded" src="{{ asset('storage/' . $logo) }}"
+                        title="Koice" alt="Koice" />
+                </div>
+                <p class="text-center mt-1 fw-bold">{{ $invoice_title }}</p>
+            </div>
+            <div class="col-5 {{ $isArabic ? 'pe-0' : '' }} invoice-text-end"> <strong>{{ __('Invoice No') }}:</strong>
+                {{ $order->number }}
+                <br>
+                <strong>{{ __('Date') }}:</strong>
+                @if ($isArabic)
+                    {{ isset($order->issue_date) ? $order->issue_date->format('Y/m/d') : $order->created_at->format('Y/m/d') }}
+                @else
+                    {{ isset($order->issue_date) ? $order->issue_date->format('d/m/Y') : $order->created_at->format('d/m/Y') }}
+                @endif
+                <br>
+                <div>
+                    <strong>{{ __('Pay To') }}:</strong>
+
+                    <address>
+                        @if ($order->pointOfSale)
+                            {{ $order->pointOfSale->{'name_' . app()->getLocale()} }}<br />
+                        @endif
+                        @if (isset($order->company->address) && $order->company->address != '' && $show_company_address)
+                            {{ $order->company->address }}<br />
+                        @endif
+                        @if ($order->company->email && $show_company_email)
+                            {{ $order->company->email }} <br>
+                        @endif
+                        @if ($order->company->tax_number && $show_company_vat)
+                            {{ $order->company->tax_number }}
+                        @endif
+                    </address>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="footer">
     </div>

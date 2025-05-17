@@ -243,6 +243,80 @@ class Order extends Model
         return $this->hasMany(Invoice::class);
     }
 
+
+
+    public function getSubtotalAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setSubtotalAttribute($value)
+    {
+        $this->attributes['subtotal'] = $value * 100;
+    }
+
+    public function getVatAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setVatAttribute($value)
+    {
+        $this->attributes['vat'] = $value * 100;
+    }
+
+    public function getOtherTaxesAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setOtherTaxesAttribute($value)
+    {
+        $this->attributes['other_taxes'] = $value * 100;
+    }
+
+    public function getDiscountAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setDiscountAttribute($value)
+    {
+        $this->attributes['discount'] = $value * 100;
+    }
+
+    public function getDiscountTotalsAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setDiscountTotalsAttribute($value)
+    {
+        $this->attributes['discount_totals'] = $value * 100;
+    }
+
+    public function getTotalAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setTotalAttribute($value)
+    {
+        $this->attributes['total'] = $value * 100;
+    }
+
+    public function getAmountPaidAttribute($value)
+    {
+        return $value / 100;
+    }
+
+    public function setAmountPaidAttribute($value)
+    {
+        $this->attributes['amount_paid'] = $value * 100;
+    }
+
+
+
     /**
      * Define activity log options.
      */

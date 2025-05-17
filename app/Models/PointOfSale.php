@@ -19,6 +19,7 @@ class PointOfSale extends Model
         'name_ar',
         'description_en',
         'description_ar',
+        'address',
         'company_id',
         'is_active',
         'meta',

@@ -10,6 +10,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -82,6 +83,11 @@ class CompanyResource extends Resource
                             ])
                             ->columns(2),
 
+                        Forms\Components\Textarea::make('address')
+                            ->label(__('Address'))
+                            ->rows(3)
+                            ->columnSpanFull(),
+
                         Toggle::make('is_active')
                             ->label(__('Active Status'))
                             ->helperText(__('Whether the company is active'))
@@ -123,6 +129,12 @@ class CompanyResource extends Resource
                     ->url(fn (Company $record): ?string => $record->website)
                     ->openUrlInNewTab()
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('address')
+                    ->label(__('Address'))
+                    ->limit(30)
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Active'))

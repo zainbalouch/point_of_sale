@@ -86,6 +86,12 @@ class PointOfSaleResource extends Resource
                                 'link',
                             ])
                             ->columnSpan(['sm' => 1]),
+
+                        Forms\Components\Textarea::make('address')
+                            ->label(__('Address'))
+                            ->placeholder(__('Physical location of this point of sale'))
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->collapsible(),
@@ -124,6 +130,12 @@ class PointOfSaleResource extends Resource
                     ->label(__('Company'))
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('address')
+                    ->label(__('Address'))
+                    ->limit(30)
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Status'))
