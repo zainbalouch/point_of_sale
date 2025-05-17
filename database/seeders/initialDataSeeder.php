@@ -17,6 +17,12 @@ class initialDataSeeder extends Seeder
     {
         $this->command->info('Starting to seed initial necessary data...');
 
+        // Seed companies first (as it's referenced by other tables)
+        $this->seedCompanies();
+
+        // Seed point of sales
+        $this->seedPointOfSales();
+
         // Seed address_types table
         $this->seedAddressTypes();
 
@@ -35,7 +41,75 @@ class initialDataSeeder extends Seeder
         // Seed settings table
         $this->seedSettings();
 
+        // Seed invoice template settings
+        $this->seedInvoiceTemplateSettings();
+
         $this->command->info('All initial data has been seeded successfully.');
+    }
+
+    /**
+     * Seed the companies table.
+     */
+    private function seedCompanies()
+    {
+        $this->command->info('Seeding companies...');
+
+        $companies = [
+            [
+                'id' => 1,
+                'legal_name' => 'Noha',
+                'tax_number' => '123456789123456',
+                'website' => null,
+                'email' => 'noha@gmail.com',
+                'phone_number' => '0574514152',
+                'logo' => null,
+                'is_active' => 1,
+                'meta' => null,
+                'created_at' => '2025-05-11 05:53:41',
+                'updated_at' => '2025-05-17 05:56:38',
+                'deleted_at' => null,
+                'address' => 'Umm Tulaih, Al Jaradiyah, Al Madinah Munawrah Road, Riyadh'
+            ]
+        ];
+
+        foreach ($companies as $company) {
+            DB::table('companies')->updateOrInsert(
+                ['id' => $company['id']],
+                $company
+            );
+        }
+    }
+
+    /**
+     * Seed the point_of_sales table.
+     */
+    private function seedPointOfSales()
+    {
+        $this->command->info('Seeding point of sales...');
+
+        $pointOfSales = [
+            [
+                'id' => 1,
+                'name_en' => 'Noha',
+                'name_ar' => 'أسلوب',
+                'description_en' => null,
+                'description_ar' => null,
+                'company_id' => 1,
+                'is_active' => 1,
+                'meta' => '[]',
+                'created_at' => '2025-05-11 05:55:49',
+                'updated_at' => '2025-05-17 05:57:45',
+                'deleted_at' => null,
+                'address' => 'Johar Town Riyadh'
+            ]
+        ];
+
+        foreach ($pointOfSales as $pos) {
+            DB::table('point_of_sales')->updateOrInsert(
+                ['id' => $pos['id']],
+                $pos
+            );
+        }
     }
 
     /**
@@ -362,4 +436,141 @@ class initialDataSeeder extends Seeder
         }
     }
 
+    /**
+     * Seed the invoice_template_settings table.
+     */
+    private function seedInvoiceTemplateSettings()
+    {
+        $this->command->info('Seeding invoice template settings...');
+
+        $invoiceTemplateSettings = [
+            [
+                'id' => 2,
+                'key_name' => 'note',
+                'field_type' => 'rich_text_editor',
+                'company_id' => 1,
+                'value_en' => '<p><strong>SNAP:</strong> NOHAALNAMLAH<br> <strong>INSTAGRAM:</strong> NOHAALNAMLAH&nbsp;</p><p><strong>Bank Details:</strong><br> <strong>Account Holder:</strong> Noha Alnamlah<br> <strong>Bank Name:</strong> Al Rajhi Bank<br> <strong>Account Number:</strong> SA9080000462608010203090&nbsp;</p>',
+                'value_ar' => '<p dir="rtl">&nbsp;<strong>سناب:</strong> NOHAALNAMLAH<br> <strong>إنستجرام:</strong> NOHAALNAMLAH&nbsp;</p><p dir="rtl"><strong>تفاصيل الحساب البنكي:</strong><br> <strong>اسم صاحب الحساب:</strong> نهى النملة<br> <strong>اسم البنك:</strong> بنك الراجحي<br> <strong>رقم الحساب:</strong> SA9080000462608010203090&nbsp;</p>',
+                'created_at' => '2025-05-11 08:33:27',
+                'updated_at' => '2025-05-17 07:29:07'
+            ],
+            [
+                'id' => 3,
+                'key_name' => 'show_customer_email',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:33:09',
+                'updated_at' => '2025-05-17 08:32:39'
+            ],
+            [
+                'id' => 4,
+                'key_name' => 'show_customer_address',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:33:54',
+                'updated_at' => '2025-05-17 08:32:43'
+            ],
+            [
+                'id' => 5,
+                'key_name' => 'show_customer_phone_number',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:34:06',
+                'updated_at' => '2025-05-17 08:32:49'
+            ],
+            [
+                'id' => 6,
+                'key_name' => 'show_customer_vat',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:34:52',
+                'updated_at' => '2025-05-17 08:32:53'
+            ],
+            [
+                'id' => 7,
+                'key_name' => 'show_company_vat',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:35:11',
+                'updated_at' => '2025-05-17 08:32:56'
+            ],
+            [
+                'id' => 8,
+                'key_name' => 'show_company_email',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:35:25',
+                'updated_at' => '2025-05-17 08:33:00'
+            ],
+            [
+                'id' => 9,
+                'key_name' => 'show_company_address',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 07:35:51',
+                'updated_at' => '2025-05-17 08:33:18'
+            ],
+            [
+                'id' => 10,
+                'key_name' => 'invoice_title',
+                'field_type' => 'text',
+                'company_id' => 1,
+                'value_en' => 'VAT Invoice',
+                'value_ar' => 'فاتورة مبيعات ضريبية',
+                'created_at' => '2025-05-17 07:38:11',
+                'updated_at' => '2025-05-17 08:48:54'
+            ],
+            [
+                'id' => 11,
+                'key_name' => 'order_invoice_title',
+                'field_type' => 'text',
+                'company_id' => 1,
+                'value_en' => 'Quotation',
+                'value_ar' => 'عرض سعر',
+                'created_at' => '2025-05-17 07:39:25',
+                'updated_at' => '2025-05-17 08:47:21'
+            ],
+            [
+                'id' => 12,
+                'key_name' => 'logo',
+                'field_type' => 'image',
+                'company_id' => 1,
+                'value_en' => 'settings/01JVEK010YFD6JK6JGFX0TRN17.jpeg',
+                'value_ar' => 'settings/01JVEK0112P8YVDQKD1F74ABWD.jpeg',
+                'created_at' => '2025-05-17 07:40:33',
+                'updated_at' => '2025-05-17 07:40:33'
+            ],
+            [
+                'id' => 13,
+                'key_name' => 'show_company_phone_number',
+                'field_type' => 'checkbox',
+                'company_id' => 1,
+                'value_en' => '1',
+                'value_ar' => '1',
+                'created_at' => '2025-05-17 10:17:32',
+                'updated_at' => '2025-05-17 10:17:32'
+            ]
+        ];
+
+        foreach ($invoiceTemplateSettings as $setting) {
+            DB::table('invoice_template_settings')->updateOrInsert(
+                ['id' => $setting['id']],
+                $setting
+            );
+        }
+    }
 }
