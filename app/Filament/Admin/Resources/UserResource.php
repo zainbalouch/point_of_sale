@@ -68,7 +68,7 @@ class UserResource extends Resource
                             ->label(__('Phone Number'))
                             ->tel()
                             ->maxLength(255)
-                            ->regex('/^[+]?[0-9\s-()]+$/')
+                            ->regex('/^[+]?[0-9\s()-]+$/')
                             ->validationMessages([
                                 'regex' => __('Please enter a valid phone number.'),
                             ]),
