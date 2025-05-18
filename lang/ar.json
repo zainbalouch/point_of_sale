@@ -255,5 +255,17 @@
     "Stock": "المخزون",
     "Tax Type": "نوع الضريبة",
     "Payment Method Information": "معلومات طريقة الدفع",
-    "Icon": "أيقونة"
+    "Icon": "أيقونة",
+    "First name can only contain letters, spaces and hyphens.": "يمكن أن يحتوي الاسم الأول على أحرف ومسافات وشرطات فقط.",
+    "Last name can only contain letters, spaces and hyphens.": "يمكن أن يحتوي الاسم الأخير على أحرف ومسافات وشرطات فقط.",
+    "This email address is already in use.": "عنوان البريد الإلكتروني مستخدم بالفعل.",
+    "Please enter a valid phone number.": "الرجاء إدخال رقم هاتف صحيح.",
+    "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character.": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل، وحرف صغير واحد، ورقم واحد، ورمز خاص واحد.",
+    "Please select at least one role.": "الرجاء اختيار دور واحد على الأقل.",
+    "User Information": "معلومات المستخدم",
+    "Enter the user's personal and account information": "أدخل المعلومات الشخصية ومعلومات الحساب للمستخدم",
+    "Roles & Permissions": "الأدوار والصلاحيات",
+    "Assign roles and access permissions to the user": "تعيين الأدوار وصلاحيات الوصول للمستخدم",
+    "Company & Location": "الشركة والموقع",
+    "Assign company and point of sale access": "تعيين الوصول إلى الشركة ونقطة البيع"
 }

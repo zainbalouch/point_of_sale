@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::create('payment_statuses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name_en');
             $table->string('name_ar');
             $table->string('color', 10);
@@ -21,13 +22,11 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        // Insert default payment statuses
-        DB::table('payment_statuses')->insert([
-            ['name_en' => 'Pending', 'name_ar' => 'قيد الانتظار', 'color' => '#f39c12', 'created_at' => now(), 'updated_at' => now()],
-            ['name_en' => 'Completed', 'name_ar' => 'مكتمل', 'color' => '#2ecc71', 'created_at' => now(), 'updated_at' => now()],
-            ['name_en' => 'Failed', 'name_ar' => 'فشل', 'color' => '#e74c3c', 'created_at' => now(), 'updated_at' => now()],
-            ['name_en' => 'Refunded', 'name_ar' => 'مسترجع', 'color' => '#3498db', 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        // Add index for faster retrieval
+        Schema::table('payment_statuses', function (Blueprint $table) {
+            $table->index('company_id');
+        });
+
     }
 
     /**

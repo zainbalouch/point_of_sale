@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('invoice_template_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('key_name');
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
+            $table->string('key_name');
+            $table->string('field_type')->default('text');
             $table->text('value_en')->nullable();
             $table->text('value_ar')->nullable();
             $table->timestamps();

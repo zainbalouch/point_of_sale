@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('email')->unique()->nullable();
             $table->string('phone_number')->unique()->nullable();
             $table->string('logo')->nullable();
+            $table->text('address')->nullable();
             $table->boolean('is_active')->default(true);
             $table->json('meta')->nullable(); // For extensibility
             $table->timestamps();

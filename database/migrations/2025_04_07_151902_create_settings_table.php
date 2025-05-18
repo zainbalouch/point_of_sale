@@ -13,10 +13,18 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();
-            $table->text('value');
+            $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('key');
             $table->string('field_type')->default('text');
+            $table->text('value_en')->nullable();
+            $table->text('value_ar')->nullable();
             $table->timestamps();
+        });
+
+        // Add index for faster retrieval
+        Schema::table('settings', function (Blueprint $table) {
+            $table->index('company_id');
+            $table->unique(['company_id', 'key']);
         });
     }
 

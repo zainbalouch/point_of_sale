@@ -9,16 +9,13 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Select;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
-use Illuminate\Support\Str;
+use App\Models\Company;
+use Filament\Facades\Filament;
 
 class AddressTypeResource extends Resource
 {
@@ -29,7 +26,9 @@ class AddressTypeResource extends Resource
     public static function form(Form $form): Form
     {
         $locals = LaravelLocalization::getSupportedLocales();
-        
+        $user = Filament::auth()->user();
+        $hasCompany = $user && $user->company_id;
+
         return $form
             ->columns([
                 'default' => 1,
@@ -44,6 +43,13 @@ class AddressTypeResource extends Resource
                         'lg' => 3,
                     ])
                     ->schema([
+                        Select::make('company_id')
+                            ->label(__('Company'))
+                            ->options(Company::pluck('legal_name', 'id'))
+                            ->required()
+                            ->disabled($hasCompany)
+                            ->default($hasCompany ? $user->company_id : null)
+                            ->dehydrated(true),
                         ...collect($locals)->flatMap(fn ($properties, $locale) => [
                             TextInput::make("name_{$locale}")
                                 ->label(__('Name') . " ({$properties['native']})")

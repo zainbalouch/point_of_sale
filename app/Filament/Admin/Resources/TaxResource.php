@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\TaxResource\Pages;
 use App\Filament\Admin\Resources\TaxResource\RelationManagers;
+use App\Models\Company;
 use App\Models\Tax;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,6 +25,8 @@ class TaxResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $user = Filament::auth()->user();
+        $hasCompany = $user && $user->company_id;
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Tax Information'))
@@ -65,14 +68,11 @@ class TaxResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('company_id')
                             ->label(__('Company'))
-                            ->relationship('company', 'legal_name')
+                            ->options(Company::pluck('legal_name', 'id'))
                             ->required()
-                            ->searchable()
-                            ->preload()
-                            ->default(function () {
-                                $user = Filament::auth()->user();
-                                return $user && $user->company_id ? $user->company_id : null;
-                            }),
+                            ->disabled($hasCompany)
+                            ->default($hasCompany ? $user->company_id : null)
+                            ->dehydrated(true),
 
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Active'))

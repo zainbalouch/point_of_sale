@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Traits\HasInitialData;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class Company extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, HasInitialData;
 
     /**
      * The attributes that are mass assignable.
@@ -40,6 +43,26 @@ class Company extends Model
         'is_active' => 'boolean',
         'meta' => 'array',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('company', function (Builder $builder) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->company_id) {
+                    $builder->where('id', $user->company_id);
+                } elseif ($user->point_of_sale_id) {
+                    $builder->whereHas('pointOfSales', function ($query) use ($user) {
+                        $query->where('id', $user->point_of_sale_id);
+                    });
+                }
+            }
+        });
+
+        static::created(function ($company) {
+            $company->seedInitialData();
+        });
+    }
 
     /**
      * Get the users belonging to the company.

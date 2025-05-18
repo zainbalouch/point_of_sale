@@ -12,24 +12,39 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
+            // Primary key
             $table->id();
+
+            // Foreign keys
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('tax_id')->nullable()->constrained()->nullOnDelete();
+
+            // Product identifiers and descriptions
             $table->string('product_name_en');
             $table->string('product_name_ar');
             $table->text('product_description_en')->nullable();
             $table->text('product_description_ar')->nullable();
             $table->string('product_sku')->nullable();
             $table->string('product_code')->nullable();
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
+
+            // Quantities and pricing
             $table->unsignedInteger('quantity');
-            $table->unsignedBigInteger('unit_price');
-            $table->foreignId('tax_id')->nullable()->constrained()->nullOnDelete();
-            $table->unsignedBigInteger('tax_amount');
-            $table->unsignedBigInteger('discount_amount')->default(0);
-            $table->decimal('total_price', 20, 2);
+            $table->decimal('unit_price', 10, 2);
+            $table->decimal('discount_amount', 10, 2)->default(0);
+            $table->string('discount_type')->default('fixed');
+            $table->decimal('vat_amount', 10, 2)->nullable();
+            $table->decimal('other_taxes_amount', 10, 2)->nullable();
+            $table->decimal('total_price', 10, 2);
+
+            // Misc
+            $table->text('note')->nullable();
+
+            // Laravel timestamps
             $table->timestamps();
             $table->softDeletes();
         });
+
 
         // Add indexes for high-read queries
         Schema::table('order_items', function (Blueprint $table) {

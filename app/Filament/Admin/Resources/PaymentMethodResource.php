@@ -12,6 +12,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Company;
+use Filament\Facades\Filament;
 
 class PaymentMethodResource extends Resource
 {
@@ -22,24 +24,36 @@ class PaymentMethodResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $user = Filament::auth()->user();
+        $hasCompany = $user && $user->company_id;
+
         return $form
             ->schema([
                 Forms\Components\Section::make('Payment Method Information')
                     ->schema([
+                        Forms\Components\Select::make('company_id')
+                            ->label(__('Company'))
+                            ->options(Company::pluck('legal_name', 'id'))
+                            ->required()
+                            ->disabled($hasCompany)
+                            ->default($hasCompany ? $user->company_id : null)
+                            ->dehydrated(true)
+                            ->columnSpan(['sm' => 2]),
+
                         Forms\Components\TextInput::make('name_en')
                             ->label('Name (English)')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Credit Card, PayPal, Cash on Delivery')
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\TextInput::make('name_ar')
                             ->label('Name (Arabic)')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('Arabic translation')
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\TextInput::make('code')
                             ->label('Code')
                             ->required()
@@ -47,14 +61,14 @@ class PaymentMethodResource extends Resource
                             ->placeholder('e.g., cc, paypal, cod')
                             ->helperText('Unique code used by the system to identify this payment method')
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\TextInput::make('icon')
                             ->label('Icon')
                             ->maxLength(255)
                             ->placeholder('e.g., fa-credit-card, heroicon-o-currency-dollar')
                             ->helperText('Icon class name or identifier. Leave empty if not applicable')
                             ->columnSpan(['sm' => 1]),
-                        
+
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
                             ->default(true)
@@ -64,7 +78,7 @@ class PaymentMethodResource extends Resource
                             ->columnSpan(['sm' => 2]),
                     ])
                     ->columns(2),
-                
+
                 Forms\Components\Section::make('Preview')
                     ->schema([
                         Forms\Components\Placeholder::make('preview')
@@ -74,7 +88,7 @@ class PaymentMethodResource extends Resource
                                 $icon = $get('icon') ? "<i class=\"{$get('icon')}\"></i>" : '';
                                 $active = $get('is_active') ? 'Active' : 'Inactive';
                                 $code = $get('code') ?: 'payment-code';
-                                
+
                                 return "This is how the payment method will appear:";
                             })
                             ->helperText(function (Forms\Get $get): string {
@@ -82,7 +96,7 @@ class PaymentMethodResource extends Resource
                                 $icon = $get('icon') ? "<i class=\"{$get('icon')}\"></i> " : '';
                                 $active = $get('is_active') ? 'Active' : 'Inactive';
                                 $code = $get('code') ?: 'payment-code';
-                                
+
                                 return "
                                 <div style=\"display: flex; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 8px;\">
                                     {$icon}<span style=\"font-weight: 500; margin-right: 8px;\">{$name}</span>
@@ -105,39 +119,39 @@ class PaymentMethodResource extends Resource
                     ->label('Name (English)')
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('name_ar')
                     ->label('Name (Arabic)')
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('code')
                     ->label('Code')
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('icon')
                     ->label('Icon')
                     ->formatStateUsing(fn (string $state): string => $state ? "<i class=\"{$state}\"></i> {$state}" : '-')
                     ->html()
                     ->searchable(),
-                
+
                 Tables\Columns\TextColumn::make('payments_count')
                     ->label('Payments')
                     ->counts('payments')
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Updated')
                     ->dateTime()
@@ -146,7 +160,7 @@ class PaymentMethodResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                
+
                 Tables\Filters\SelectFilter::make('is_active')
                     ->label('Status')
                     ->options([
@@ -164,14 +178,14 @@ class PaymentMethodResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    
+
                     Tables\Actions\BulkAction::make('activate')
                         ->label('Activate Selected')
                         ->icon('heroicon-o-check')
                         ->action(fn (PaymentMethod $records) => $records->each->update(['is_active' => true]))
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),
-                    
+
                     Tables\Actions\BulkAction::make('deactivate')
                         ->label('Deactivate Selected')
                         ->icon('heroicon-o-x-mark')
@@ -199,7 +213,7 @@ class PaymentMethodResource extends Resource
             'edit' => Pages\EditPaymentMethod::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -207,17 +221,17 @@ class PaymentMethodResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
-    
+
     public static function getModelLabel(): string
     {
         return __('Payment method');
     }
-    
+
     public static function getPluralModelLabel(): string
     {
         return __('Payment methods');
     }
-    
+
     public static function getNavigationGroup(): string
     {
         return __('Settings');

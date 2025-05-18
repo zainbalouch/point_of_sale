@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentMethod extends Model
 {
@@ -24,6 +26,7 @@ class PaymentMethod extends Model
         'code',
         'icon',
         'is_active',
+        'company_id',
     ];
 
     /**
@@ -34,6 +37,45 @@ class PaymentMethod extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('company', function (Builder $builder) {
+            $user = Auth::user();
+            if ($user && $user->company_id) {
+                $builder->whereHas('company', function ($query) {
+                    $query->where('is_active', true);
+                })->where('company_id', $user->company_id);
+            }
+        });
+
+        static::retrieved(function ($model) {
+            $user = Auth::user();
+            if ($user && $user->company_id) {
+                if (!$model->company || !$model->company->is_active) {
+                    abort(404);
+                }
+            }
+        });
+
+        static::updating(function ($model) {
+            $user = Auth::user();
+            if ($user && $user->company_id) {
+                if (!$model->company || !$model->company->is_active) {
+                    abort(403, 'Cannot update record for inactive company');
+                }
+            }
+        });
+
+        static::deleting(function ($model) {
+            $user = Auth::user();
+            if ($user && $user->company_id) {
+                if (!$model->company || !$model->company->is_active) {
+                    abort(403, 'Cannot delete record for inactive company');
+                }
+            }
+        });
+    }
 
     /**
      * Get the payments for the payment method.
@@ -65,5 +107,10 @@ class PaymentMethod extends Model
         return LogOptions::defaults()
             ->logOnly(['*'])
             ->logOnlyDirty();
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

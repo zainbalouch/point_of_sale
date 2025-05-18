@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class Order extends Model
 {
@@ -92,59 +94,48 @@ class Order extends Model
             }
         });
 
-        // static::created(function ($order) {
-        //     // Create an invoice for the order
-        //     $invoice = new Invoice([
-        //         'customer_name' => $order->customer->full_name,
-        //         'customer_email' => $order->customer->email,
-        //         'customer_phone' => $order->customer->phone_number,
-        //         'company_id' => $order->company_id,
-        //         'customer_id' => $order->customer_id,
-        //         'billing_address_id' => $order->billing_address_id,
-        //         'shipping_address_id' => $order->shipping_address_id,
-        //         'subtotal' => $order->subtotal,
-        //         'vat' => $order->vat,
-        //         'other_taxes' => $order->other_taxes,
-        //         'discount_amount' => $order->discount,
-        //         'total_amount' => $order->total,
-        //         'amount_paid' => $order->amount_paid,
-        //         'issue_date' => now(),
-        //         'due_date' => now()->addDays(30), // 30 days due date
-        //         'invoice_status_id' => 1, // Draft status
-        //         'currency_id' => $order->currency_id,
-        //         'issued_by_user' => $order->user_id,
-        //         'point_of_sale_id' => $order->point_of_sale_id,
-        //         'meta' => [
-        //             'order_id' => $order->id,
-        //             'order_number' => $order->number
-        //         ]
-        //     ]);
+        static::addGlobalScope('company', function (Builder $builder) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->point_of_sale_id) {
+                    $builder->where('point_of_sale_id', $user->point_of_sale_id);
+                } elseif ($user->company_id) {
+                    $builder->whereHas('company', function ($query) {
+                        $query->where('is_active', true);
+                    })->where('company_id', $user->company_id);
+                }
+            }
+        });
 
-        //     $invoice->save();
+        static::updating(function ($model) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->point_of_sale_id) {
+                    if ($model->point_of_sale_id !== $user->point_of_sale_id) {
+                        abort(403, 'Cannot update record for different point of sale');
+                    }
+                } elseif ($user->company_id) {
+                    if (!$model->company || !$model->company->is_active) {
+                        abort(403, 'Cannot update record for inactive company');
+                    }
+                }
+            }
+        });
 
-        //     // Create invoice items from order items
-        //     foreach ($order->items as $item) {
-        //         $invoiceItem = new InvoiceItem([
-        //             'invoice_id' => $invoice->id,
-        //             'product_name_en' => $item->product_name_en,
-        //             'product_name_ar' => $item->product_name_ar,
-        //             'product_description_en' => $item->product_description_en,
-        //             'product_description_ar' => $item->product_description_ar,
-        //             'product_sku' => $item->product_sku,
-        //             'product_code' => $item->product_code,
-        //             'quantity' => $item->quantity,
-        //             'unit_price' => $item->unit_price,
-        //             'vat_amount' => $item->vat_amount,
-        //             'other_taxes_amount' => $item->other_taxes_amount,
-        //             'discount_amount' => $item->discount_amount,
-        //             'subtotal' => $item->total_price,
-        //             'total' => $item->total_price,
-        //             'note' => $item->note
-        //         ]);
-
-        //         $invoiceItem->save();
-        //     }
-        // });
+        static::deleting(function ($model) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->point_of_sale_id) {
+                    if ($model->point_of_sale_id !== $user->point_of_sale_id) {
+                        abort(403, 'Cannot delete record for different point of sale');
+                    }
+                } elseif ($user->company_id) {
+                    if (!$model->company || !$model->company->is_active) {
+                        abort(403, 'Cannot delete record for inactive company');
+                    }
+                }
+            }
+        });
     }
 
     /**

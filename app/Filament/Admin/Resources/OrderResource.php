@@ -1135,8 +1135,8 @@ class OrderResource extends Resource
                     ->collapsible()
                     ->collapsed(),
 
+
                 Forms\Components\Section::make(__('Shipping Address'))
-                    ->relationship('shippingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
                             ->default(1), // Using numeric value 1 for shipping address type
@@ -1213,7 +1213,6 @@ class OrderResource extends Resource
 
 
                 Forms\Components\Section::make(__('Billing Address'))
-                    ->relationship('billingAddress')
                     ->schema([
                         Forms\Components\Hidden::make('address_type_id')
                             ->default(2), // Using numeric value 2 for billing address type

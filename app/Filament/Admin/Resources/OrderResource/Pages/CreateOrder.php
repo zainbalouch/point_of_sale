@@ -14,10 +14,24 @@ class CreateOrder extends CreateRecord
 
     protected function afterCreate(): void
     {
-        // Get the created order (record is already available in this context)
         $order = $this->record;
+        $data = $this->data;
 
-        // Log for debugging
+        // Create shipping address if data exists
+        if (!empty($data['shipping_address'])) {
+            $shippingAddress = $data['shipping_address'];
+            $shippingAddress['addressable_type'] = 'App\\Models\\Order';
+            $shippingAddress['addressable_id'] = $order->id;
+            $order->shippingAddress()->create($shippingAddress);
+        }
+
+        // Create billing address if data exists
+        if (!empty($data['billing_address'])) {
+            $billingAddress = $data['billing_address'];
+            $billingAddress['addressable_type'] = 'App\\Models\\Order';
+            $billingAddress['addressable_id'] = $order->id;
+            $order->billingAddress()->create($billingAddress);
+        }
 
         // Get all items of the order
         $orderItems = $order->items;

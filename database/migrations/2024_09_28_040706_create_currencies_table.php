@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('currencies', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code');
             $table->string('symbol');
             $table->timestamps();
             $table->softDeletes();
@@ -23,15 +24,11 @@ return new class extends Migration
         // Add index for faster retrieval
         Schema::table('currencies', function (Blueprint $table) {
             $table->index('code');
+            $table->index('company_id');
+            $table->unique(['company_id', 'code']);
+
         });
 
-        // Insert common currencies
-        DB::table('currencies')->insert([
-            ['name' => 'Saudi Riyal', 'code' => 'SAR', 'symbol' => 'ر.س', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'US Dollar', 'code' => 'USD', 'symbol' => '$', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Euro', 'code' => 'EUR', 'symbol' => '€', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'British Pound', 'code' => 'GBP', 'symbol' => '£', 'created_at' => now(), 'updated_at' => now()],
-        ]);
     }
 
     /**

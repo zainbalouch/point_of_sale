@@ -1,159 +1,71 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Traits;
 
-use App\Models\User;
-use Illuminate\Database\Seeder;
+use App\Models\AddressType;
+use App\Models\Currency;
+use App\Models\PaymentMethod;
+use App\Models\PaymentStatus;
+use App\Models\OrderStatus;
+use App\Models\Setting;
+use App\Models\InvoiceTemplateSetting;
+use App\Models\Tax;
 use Illuminate\Support\Facades\DB;
 
-class initialDataSeeder extends Seeder
+trait HasInitialData
 {
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
-    public function run()
+    public function seedInitialData()
     {
-        $this->command->info('Starting to seed initial necessary data...');
+        \DB::beginTransaction();
+        try {
+            // $this->seedAddressTypes();
+            $this->seedCurrencies();
+            $this->seedPaymentMethods();
+            $this->seedPaymentStatuses();
+            $this->seedOrderStatuses();
+            $this->seedSettings();
+            $this->seedInvoiceTemplateSettings();
+            $this->seedTaxes();
 
-        // Seed companies first (as it's referenced by other tables)
-        $this->seedCompanies();
-
-        // Seed point of sales
-        $this->seedPointOfSales();
-
-        // Seed address_types table
-        $this->seedAddressTypes();
-
-        // Seed currencies table
-        $this->seedCurrencies();
-
-        // Seed payment_methods table
-        $this->seedPaymentMethods();
-
-        // Seed payment_statuses table
-        $this->seedPaymentStatuses();
-
-        // Seed order_statuses table
-        $this->seedOrderStatuses();
-
-        // Seed settings table
-        $this->seedSettings();
-
-        // Seed invoice template settings
-        $this->seedInvoiceTemplateSettings();
-
-        $this->command->info('All initial data has been seeded successfully.');
-    }
-
-    /**
-     * Seed the companies table.
-     */
-    private function seedCompanies()
-    {
-        $this->command->info('Seeding companies...');
-
-        $companies = [
-            [
-                'id' => 1,
-                'legal_name' => 'Noha',
-                'tax_number' => '123456789123456',
-                'website' => null,
-                'email' => 'noha@gmail.com',
-                'phone_number' => '0574514152',
-                'logo' => null,
-                'is_active' => 1,
-                'meta' => null,
-                'created_at' => '2025-05-11 05:53:41',
-                'updated_at' => '2025-05-17 05:56:38',
-                'deleted_at' => null,
-                'address' => 'Umm Tulaih, Al Jaradiyah, Al Madinah Munawrah Road, Riyadh'
-            ]
-        ];
-
-        foreach ($companies as $company) {
-            DB::table('companies')->updateOrInsert(
-                ['id' => $company['id']],
-                $company
-            );
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            throw $e;
         }
     }
 
-    /**
-     * Seed the point_of_sales table.
-     */
-    private function seedPointOfSales()
+    // protected function seedAddressTypes()
+    // {
+    //     $addressTypes = [
+    //         [
+    //             'id' => 1,
+    //             'company_id' => $this->id,
+    //             'name_en' => 'Shipping',
+    //             'name_ar' => 'شحن',
+    //             'created_at' => '2025-03-23 17:14:16',
+    //             'updated_at' => '2025-03-23 17:14:16'
+    //         ],
+    //         [
+    //             'id' => 2,
+    //             'company_id' => $this->id,
+    //             'name_en' => 'Billing',
+    //             'name_ar' => 'فواتير',
+    //             'created_at' => '2025-03-23 17:14:16',
+    //             'updated_at' => '2025-03-23 17:14:16'
+    //         ]
+    //     ];
+
+    //     foreach ($addressTypes as $type) {
+    //         AddressType::create($type);
+    //     }
+    // }
+
+    protected function seedCurrencies()
     {
-        $this->command->info('Seeding point of sales...');
-
-        $pointOfSales = [
-            [
-                'id' => 1,
-                'name_en' => 'Noha',
-                'name_ar' => 'أسلوب',
-                'description_en' => null,
-                'description_ar' => null,
-                'company_id' => 1,
-                'is_active' => 1,
-                'meta' => '[]',
-                'created_at' => '2025-05-11 05:55:49',
-                'updated_at' => '2025-05-17 05:57:45',
-                'deleted_at' => null,
-                'address' => 'Johar Town Riyadh'
-            ]
-        ];
-
-        foreach ($pointOfSales as $pos) {
-            DB::table('point_of_sales')->updateOrInsert(
-                ['id' => $pos['id']],
-                $pos
-            );
-        }
-    }
-
-    /**
-     * Seed the address_types table.
-     */
-    private function seedAddressTypes()
-    {
-        $this->command->info('Seeding address types...');
-
-        $addressTypes = [
-            [
-                'id' => 1,
-                'name_en' => 'Shipping',
-                'name_ar' => 'شحن',
-                'created_at' => '2025-03-23 17:14:16',
-                'updated_at' => '2025-03-23 17:14:16'
-            ],
-            [
-                'id' => 2,
-                'name_en' => 'Billing',
-                'name_ar' => 'فواتير',
-                'created_at' => '2025-03-23 17:14:16',
-                'updated_at' => '2025-03-23 17:14:16'
-            ]
-        ];
-
-        foreach ($addressTypes as $addressType) {
-            DB::table('address_types')->updateOrInsert(
-                ['id' => $addressType['id']],
-                $addressType
-            );
-        }
-    }
-
-    /**
-     * Seed the currencies table.
-     */
-    private function seedCurrencies()
-    {
-        $this->command->info('Seeding currencies...');
-
         $currencies = [
             [
                 'id' => 1,
+                'company_id' => $this->id,
                 'name' => 'Saudi Riyal',
                 'code' => 'SAR',
                 'symbol' => 'ر.س',
@@ -163,6 +75,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 2,
+                'company_id' => $this->id,
                 'name' => 'US Dollar',
                 'code' => 'USD',
                 'symbol' => '$',
@@ -172,6 +85,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 3,
+                'company_id' => $this->id,
                 'name' => 'Euro',
                 'code' => 'EUR',
                 'symbol' => '€',
@@ -181,6 +95,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 4,
+                'company_id' => $this->id,
                 'name' => 'British Pound',
                 'code' => 'GBP',
                 'symbol' => '£',
@@ -190,6 +105,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 5,
+                'company_id' => $this->id,
                 'name' => 'Pakistani Rupees',
                 'code' => 'PKR',
                 'symbol' => 'Rs',
@@ -200,23 +116,16 @@ class initialDataSeeder extends Seeder
         ];
 
         foreach ($currencies as $currency) {
-            DB::table('currencies')->updateOrInsert(
-                ['id' => $currency['id']],
-                $currency
-            );
+            Currency::create($currency);
         }
     }
 
-    /**
-     * Seed the payment_methods table.
-     */
-    private function seedPaymentMethods()
+    protected function seedPaymentMethods()
     {
-        $this->command->info('Seeding payment methods...');
-
         $paymentMethods = [
             [
                 'id' => 1,
+                'company_id' => $this->id,
                 'name_en' => 'Credit Card',
                 'name_ar' => 'بطاقة ائتمان',
                 'code' => 'credit_card',
@@ -228,6 +137,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 2,
+                'company_id' => $this->id,
                 'name_en' => 'PayPal',
                 'name_ar' => 'باي بال',
                 'code' => 'paypal',
@@ -239,6 +149,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 3,
+                'company_id' => $this->id,
                 'name_en' => 'Bank Transfer',
                 'name_ar' => 'تحويل بنكي',
                 'code' => 'bank_transfer',
@@ -250,6 +161,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 4,
+                'company_id' => $this->id,
                 'name_en' => 'Cash on Delivery',
                 'name_ar' => 'الدفع عند الاستلام',
                 'code' => 'cod',
@@ -262,23 +174,16 @@ class initialDataSeeder extends Seeder
         ];
 
         foreach ($paymentMethods as $method) {
-            DB::table('payment_methods')->updateOrInsert(
-                ['id' => $method['id']],
-                $method
-            );
+            PaymentMethod::create($method);
         }
     }
 
-    /**
-     * Seed the payment_statuses table.
-     */
-    private function seedPaymentStatuses()
+    protected function seedPaymentStatuses()
     {
-        $this->command->info('Seeding payment statuses...');
-
         $paymentStatuses = [
             [
                 'id' => 1,
+                'company_id' => $this->id,
                 'name_en' => 'Pending',
                 'name_ar' => 'قيد الانتظار',
                 'color' => '#f39c12',
@@ -288,6 +193,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 2,
+                'company_id' => $this->id,
                 'name_en' => 'Completed',
                 'name_ar' => 'مكتمل',
                 'color' => '#2ecc71',
@@ -297,6 +203,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 3,
+                'company_id' => $this->id,
                 'name_en' => 'Failed',
                 'name_ar' => 'فشل',
                 'color' => '#e74c3c',
@@ -306,6 +213,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 4,
+                'company_id' => $this->id,
                 'name_en' => 'Refunded',
                 'name_ar' => 'مسترجع',
                 'color' => '#3498db',
@@ -316,23 +224,16 @@ class initialDataSeeder extends Seeder
         ];
 
         foreach ($paymentStatuses as $status) {
-            DB::table('payment_statuses')->updateOrInsert(
-                ['id' => $status['id']],
-                $status
-            );
+            PaymentStatus::create($status);
         }
     }
 
-    /**
-     * Seed the order_statuses table.
-     */
-    private function seedOrderStatuses()
+    protected function seedOrderStatuses()
     {
-        $this->command->info('Seeding order statuses...');
-
         $orderStatuses = [
             [
                 'id' => 1,
+                'company_id' => $this->id,
                 'name_en' => 'New',
                 'name_ar' => 'جديد',
                 'color' => '#3498db',
@@ -342,6 +243,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 2,
+                'company_id' => $this->id,
                 'name_en' => 'Processing',
                 'name_ar' => 'قيد المعالجة',
                 'color' => '#f39c12',
@@ -351,6 +253,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 3,
+                'company_id' => $this->id,
                 'name_en' => 'Shipped',
                 'name_ar' => 'تم الشحن',
                 'color' => '#9b59b6',
@@ -360,6 +263,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 4,
+                'company_id' => $this->id,
                 'name_en' => 'Delivered',
                 'name_ar' => 'تم التسليم',
                 'color' => '#2ecc71',
@@ -369,6 +273,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 5,
+                'company_id' => $this->id,
                 'name_en' => 'Cancelled',
                 'name_ar' => 'ملغي',
                 'color' => '#e74c3c',
@@ -379,23 +284,16 @@ class initialDataSeeder extends Seeder
         ];
 
         foreach ($orderStatuses as $status) {
-            DB::table('order_statuses')->updateOrInsert(
-                ['id' => $status['id']],
-                $status
-            );
+            OrderStatus::create($status);
         }
     }
 
-    /**
-     * Seed the settings table.
-     */
-    private function seedSettings()
+    protected function seedSettings()
     {
-        $this->command->info('Seeding settings...');
-
         $settings = [
             [
                 'id' => 1,
+                'company_id' => $this->id,
                 'key' => 'default_currency',
                 'value_en' => 'SAR',
                 'value_ar' => 'ر.س',
@@ -405,6 +303,7 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 2,
+                'company_id' => $this->id,
                 'key' => 'default_payment_methode',
                 'value_en' => 'Cash on Delivery',
                 'value_ar' => 'الدفع عند الاستلام',
@@ -415,26 +314,18 @@ class initialDataSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            DB::table('settings')->updateOrInsert(
-                ['id' => $setting['id']],
-                $setting
-            );
+            Setting::create($setting);
         }
     }
 
-    /**
-     * Seed the invoice_template_settings table.
-     */
-    private function seedInvoiceTemplateSettings()
+    protected function seedInvoiceTemplateSettings()
     {
-        $this->command->info('Seeding invoice template settings...');
-
         $invoiceTemplateSettings = [
             [
                 'id' => 2,
+                'company_id' => $this->id,
                 'key_name' => 'note',
                 'field_type' => 'rich_text_editor',
-                'company_id' => 1,
                 'value_en' => '<p><strong>SNAP:</strong> NOHAALNAMLAH<br> <strong>INSTAGRAM:</strong> NOHAALNAMLAH&nbsp;</p><p><strong>Bank Details:</strong><br> <strong>Account Holder:</strong> Noha Alnamlah<br> <strong>Bank Name:</strong> Al Rajhi Bank<br> <strong>Account Number:</strong> SA9080000462608010203090&nbsp;</p>',
                 'value_ar' => '<p dir="rtl">&nbsp;<strong>سناب:</strong> NOHAALNAMLAH<br> <strong>إنستجرام:</strong> NOHAALNAMLAH&nbsp;</p><p dir="rtl"><strong>تفاصيل الحساب البنكي:</strong><br> <strong>اسم صاحب الحساب:</strong> نهى النملة<br> <strong>اسم البنك:</strong> بنك الراجحي<br> <strong>رقم الحساب:</strong> SA9080000462608010203090&nbsp;</p>',
                 'created_at' => '2025-05-11 08:33:27',
@@ -442,9 +333,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 3,
+                'company_id' => $this->id,
                 'key_name' => 'logo',
                 'field_type' => 'image',
-                'company_id' => 1,
                 'value_en' => 'settings/01JVEK010YFD6JK6JGFX0TRN17.jpeg',
                 'value_ar' => 'settings/01JVEK0112P8YVDQKD1F74ABWD.jpeg',
                 'created_at' => '2025-05-17 07:40:33',
@@ -452,9 +343,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 4,
+                'company_id' => $this->id,
                 'key_name' => 'show_customer_address',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:33:54',
@@ -462,9 +353,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 5,
+                'company_id' => $this->id,
                 'key_name' => 'show_customer_phone_number',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:34:06',
@@ -472,9 +363,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 6,
+                'company_id' => $this->id,
                 'key_name' => 'show_customer_vat',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:34:52',
@@ -482,9 +373,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 7,
+                'company_id' => $this->id,
                 'key_name' => 'show_company_vat',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:35:11',
@@ -492,9 +383,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 8,
+                'company_id' => $this->id,
                 'key_name' => 'show_company_email',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:35:25',
@@ -502,9 +393,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 9,
+                'company_id' => $this->id,
                 'key_name' => 'show_company_address',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:35:51',
@@ -512,9 +403,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 10,
+                'company_id' => $this->id,
                 'key_name' => 'invoice_title',
                 'field_type' => 'text',
-                'company_id' => 1,
                 'value_en' => 'VAT Invoice',
                 'value_ar' => 'فاتورة مبيعات ضريبية',
                 'created_at' => '2025-05-17 07:38:11',
@@ -522,9 +413,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 11,
+                'company_id' => $this->id,
                 'key_name' => 'order_invoice_title',
                 'field_type' => 'text',
-                'company_id' => 1,
                 'value_en' => 'Quotation',
                 'value_ar' => 'عرض سعر',
                 'created_at' => '2025-05-17 07:39:25',
@@ -532,9 +423,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 12,
+                'company_id' => $this->id,
                 'key_name' => 'show_customer_email',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 07:33:09',
@@ -542,9 +433,9 @@ class initialDataSeeder extends Seeder
             ],
             [
                 'id' => 13,
+                'company_id' => $this->id,
                 'key_name' => 'show_company_phone_number',
                 'field_type' => 'checkbox',
-                'company_id' => 1,
                 'value_en' => '1',
                 'value_ar' => '1',
                 'created_at' => '2025-05-17 10:17:32',
@@ -553,10 +444,29 @@ class initialDataSeeder extends Seeder
         ];
 
         foreach ($invoiceTemplateSettings as $setting) {
-            DB::table('invoice_template_settings')->updateOrInsert(
-                ['id' => $setting['id']],
-                $setting
-            );
+            InvoiceTemplateSetting::create($setting);
+        }
+    }
+
+    protected function seedTaxes()
+    {
+        $taxes = [
+            [
+                'id' => 1,
+                'company_id' => $this->id,
+                'name_en' => 'VAT',
+                'name_ar' => 'ضريبة القيمة المضافة',
+                'type' => 'percentage',
+                'amount' => 15.00,
+                'is_active' => 1,
+                'created_at' => '2025-05-18 13:06:29',
+                'updated_at' => '2025-05-18 13:06:29',
+                'deleted_at' => null
+            ]
+        ];
+
+        foreach ($taxes as $tax) {
+            Tax::create($tax);
         }
     }
 }

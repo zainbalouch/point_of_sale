@@ -14,9 +14,15 @@ return new class extends Migration
     {
         Schema::create('address_types', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name_en');
             $table->string('name_ar');
             $table->timestamps();
+        });
+
+        // Add index for faster retrieval
+        Schema::table('address_types', function (Blueprint $table) {
+            $table->index('company_id');
         });
 
         // Insert default address types

@@ -12,34 +12,49 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invoices', function (Blueprint $table) {
+            // Primary key
             $table->id();
+
+            // Identifiers
             $table->string('number');
+
+            // Foreign keys: Core relations
             $table->foreignId('order_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('point_of_sale_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->foreignId('issued_by_user')->nullable()->constrained('users')->nullOnDelete();
+
+            // Denormalized customer data
             $table->string('customer_name')->nullable();
             $table->string('customer_email')->nullable();
             $table->string('customer_phone')->nullable();
+
+            // Financial data
             $table->unsignedBigInteger('subtotal');
             $table->unsignedBigInteger('discount')->default(0);
             $table->decimal('vat', 10, 2)->nullable();
             $table->decimal('other_taxes', 10, 2)->nullable();
             $table->unsignedBigInteger('total');
             $table->decimal('amount_paid', 10, 2)->nullable()->default(0);
-            $table->datetime('due_date')->nullable();
-            $table->datetime('paid_date')->nullable();
-            $table->datetime('issue_date');
-            $table->json('meta')->nullable(); // For extensibility
-            $table->foreignId('billing_address_id')->nullable()->constrained('addresses')->nullOnDelete();
-            $table->foreignId('shipping_address_id')->nullable()->constrained('addresses')->nullOnDelete();
+
+            // Dates
+            $table->dateTime('issue_date');
+            $table->dateTime('due_date')->nullable();
+            $table->dateTime('paid_date')->nullable();
+
+            // Foreign keys: Meta relations
             $table->foreignId('invoice_status_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('currency_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('billing_address_id')->nullable()->constrained('addresses')->nullOnDelete();
+            $table->foreignId('shipping_address_id')->nullable()->constrained('addresses')->nullOnDelete();
 
+            // Meta and timestamps
+            $table->json('meta')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
+
 
         // Add indexes for high-read queries
         Schema::table('invoices', function (Blueprint $table) {

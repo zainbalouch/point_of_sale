@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class Customer extends Model
 {
@@ -99,5 +101,53 @@ class Customer extends Model
         return LogOptions::defaults()
             ->logOnly(['*'])
             ->logOnlyDirty();
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope('company', function (Builder $builder) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->point_of_sale_id) {
+                    $builder->whereHas('pointOfSale', function ($query) {
+                        $query->where('is_active', true);
+                    })->where('point_of_sale_id', $user->point_of_sale_id);
+                } elseif ($user->company_id) {
+                    $builder->whereHas('company', function ($query) {
+                        $query->where('is_active', true);
+                    })->where('company_id', $user->company_id);
+                }
+            }
+        });
+
+        static::updating(function ($model) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->point_of_sale_id) {
+                    if (!$model->pointOfSale || !$model->pointOfSale->is_active) {
+                        abort(403, 'Cannot update record for inactive point of sale');
+                    }
+                } elseif ($user->company_id) {
+                    if (!$model->company || !$model->company->is_active) {
+                        abort(403, 'Cannot update record for inactive company');
+                    }
+                }
+            }
+        });
+
+        static::deleting(function ($model) {
+            $user = Auth::user();
+            if ($user) {
+                if ($user->point_of_sale_id) {
+                    if (!$model->pointOfSale || !$model->pointOfSale->is_active) {
+                        abort(403, 'Cannot delete record for inactive point of sale');
+                    }
+                } elseif ($user->company_id) {
+                    if (!$model->company || !$model->company->is_active) {
+                        abort(403, 'Cannot delete record for inactive company');
+                    }
+                }
+            }
+        });
     }
 }

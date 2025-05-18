@@ -49,7 +49,8 @@ class CompanyResource extends Resource
 
                                 TextInput::make('tax_number')
                                     ->label(__('Tax Number'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
                             ])
                             ->columns(2),
 
@@ -58,12 +59,14 @@ class CompanyResource extends Resource
                                 TextInput::make('website')
                                     ->label(__('Website'))
                                     ->url()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
 
                                 TextInput::make('email')
                                     ->label(__('Email'))
                                     ->email()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
                             ])
                             ->columns(2),
 

@@ -12,6 +12,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Company;
+use Filament\Facades\Filament;
 
 class PaymentStatusResource extends Resource
 {
@@ -23,24 +25,36 @@ class PaymentStatusResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $user = Filament::auth()->user();
+        $hasCompany = $user && $user->company_id;
+
         return $form
             ->schema([
                 Forms\Components\Section::make('Status Information')
                     ->schema([
+                        Forms\Components\Select::make('company_id')
+                            ->label(__('Company'))
+                            ->options(Company::pluck('legal_name', 'id'))
+                            ->required()
+                            ->disabled($hasCompany)
+                            ->default($hasCompany ? $user->company_id : null)
+                            ->dehydrated(true)
+                            ->columnSpan(['sm' => 2, 'md' => 2]),
+
                         Forms\Components\TextInput::make('name_en')
                             ->label('Name (English)')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Pending, Completed, Failed, Refunded')
                             ->columnSpan(['sm' => 1, 'md' => 1]),
-                        
+
                         Forms\Components\TextInput::make('name_ar')
                             ->label('Name (Arabic)')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('Arabic translation')
                             ->columnSpan(['sm' => 1, 'md' => 1]),
-                        
+
                         Forms\Components\ColorPicker::make('color')
                             ->label('Status Color')
                             ->required()
@@ -48,7 +62,7 @@ class PaymentStatusResource extends Resource
                             ->columnSpan(['sm' => 2, 'md' => 2]),
                     ])
                     ->columns(2),
-                    
+
                 Forms\Components\Section::make('Preview')
                     ->schema([
                         Forms\Components\Placeholder::make('preview')
@@ -77,32 +91,32 @@ class PaymentStatusResource extends Resource
                     ->label('Name (English)')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('name_ar')
                     ->label('Name (Arabic)')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\ColorColumn::make('color')
                     ->label('Color'),
-                    
+
                 Tables\Columns\TextColumn::make('name_en')
                     ->label('Preview')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => $state)
                     ->color(fn (PaymentStatus $record): string => $record->color),
-                    
+
                 Tables\Columns\TextColumn::make('payments_count')
                     ->label('Payments')
                     ->counts('payments')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Updated')
                     ->dateTime()
@@ -143,7 +157,7 @@ class PaymentStatusResource extends Resource
             'edit' => Pages\EditPaymentStatus::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -151,12 +165,12 @@ class PaymentStatusResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
-    
+
     public static function getModelLabel(): string
     {
         return __('Payment status');
     }
-    
+
     public static function getPluralModelLabel(): string
     {
         return __('Payment statuses');
