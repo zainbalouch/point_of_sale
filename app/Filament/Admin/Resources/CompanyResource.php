@@ -105,10 +105,12 @@ class CompanyResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\ImageColumn::make('logo')
-                    ->label(__('Logo')),
+                    ->label(__('Logo'))
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('legal_name')
                     ->label(__('Legal Name'))
@@ -117,27 +119,30 @@ class CompanyResource extends Resource
 
                 Tables\Columns\TextColumn::make('tax_number')
                     ->label(__('Tax Number'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('Email'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('phone_number')
                     ->label(__('Phone Number'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('website')
                     ->label(__('Website'))
                     ->url(fn (Company $record): ?string => $record->website)
                     ->openUrlInNewTab()
-                    ->searchable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('address')
                     ->label(__('Address'))
                     ->limit(30)
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Active'))
