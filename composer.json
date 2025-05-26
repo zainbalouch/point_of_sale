@@ -21,6 +21,7 @@
         "salla/zatca": "^3.0",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.8",
+        "stancl/tenancy": "^3.9",
         "yajra/laravel-datatables-oracle": "^11.0"
     },
     "require-dev": {
