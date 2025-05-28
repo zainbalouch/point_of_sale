@@ -78,9 +78,9 @@ class Order extends Model
                 $datePrefix = now()->format('Ym');
 
                 // Get the last order number for this month
-                $lastOrder = static::where('number', 'like', "ORD-{$datePrefix}-%")
-                    ->orderBy('number', 'desc')
-                    ->first();
+                $lastOrder = static::withTrashed()
+                ->orderBy('number', 'desc')
+                ->first();
 
                 // Extract the sequence number from the last order or start from 1
                 $sequence = 1;

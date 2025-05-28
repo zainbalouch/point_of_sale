@@ -36,7 +36,9 @@ class PointOfSale extends Model
     {
         static::addGlobalScope('company', function (Builder $builder) {
             $user = Auth::user();
-            if ($user && $user->company_id) {
+            if ($user->point_of_sale_id) {
+                $builder->where('id', $user->point_of_sale_id);
+            } elseif ($user && $user->company_id) {
                 $builder->whereHas('company', function ($query) {
                     $query->where('is_active', true);
                 })->where('company_id', $user->company_id);

@@ -19,6 +19,7 @@ return [
     'central_domains' => [
         '127.0.0.1',
         'localhost',
+        'multitenancy-practice.localhost',
         'https://multitenancy-practice.localhost',
     ],
 

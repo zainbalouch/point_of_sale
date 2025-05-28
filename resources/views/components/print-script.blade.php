@@ -61,8 +61,7 @@
             $createdInvoiceId = session()->get('created_invoice_id');
         @endphp
         <script>
-            openPrintPreview(@json(route('invoice.show', $createdInvoiceId)));
+            openPrintPreview(@json('/invoice/' . $createdInvoiceId));
         </script>
     @endif
 @endonce
-

@@ -7,9 +7,12 @@ use BezhanSalleh\FilamentShield\Support\Utils;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Filament\Actions;
+use App\Filament\Traits\HasCloseAndRedirect;
 
 class CreateRole extends CreateRecord
 {
+    use HasCloseAndRedirect;
     protected static string $resource = RoleResource::class;
 
     public Collection $permissions;

@@ -467,6 +467,7 @@ class OrderResource extends Resource
                                                             }),
 
                                                         Forms\Components\TextInput::make('name_ar')
+                                                            ->required()
                                                             ->label(__('Name (Arabic)'))
                                                             ->maxLength(255),
 
@@ -1387,7 +1388,7 @@ class OrderResource extends Resource
                 Tables\Actions\Action::make('printInvoice')
                     ->label(__('Print Invoice'))
                     ->icon('heroicon-o-printer')
-                    ->url(fn($record) => route('order.invoice.show', $record))
+                    ->url(fn($record) => '/order-invoice/'.$record->id)
                     ->extraAttributes([
                         'onclick' => "event.preventDefault(); openPrintPreview(this.href)"
                     ]),

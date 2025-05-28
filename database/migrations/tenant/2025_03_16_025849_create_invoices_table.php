@@ -62,7 +62,7 @@ return new class extends Migration
             $table->index(['company_id', 'number']);
             $table->index(['customer_id', 'created_at']);
             $table->index('invoice_status_id');
-            $table->unique(['company_id', 'number']);
+            $table->unique(['company_id', 'point_of_sale_id', 'number']);
         });
     }
 

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Filament\Admin\Resources\UserResource\RelationManagers;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -122,6 +123,9 @@ class UserResource extends Resource
                                 $isOnlySuperAdmin = count($roleNames) === 1 && $hasSuperAdmin;
                                 return !$isOnlySuperAdmin;
                             })
+                            ->default(fn () => Filament::auth()->user()->company_id)
+                            ->disabled(fn () => Filament::auth()->user()->company_id !== null)
+                            ->dehydrated()
                             ->live(),
                         Select::make('point_of_sale_id')
                             ->label(__('Point of Sale'))
@@ -133,6 +137,9 @@ class UserResource extends Resource
                                 $isOnlySuperAdmin = count($roleNames) === 1 && ($hasSuperAdmin || $hasAdmin);
                                 return !$isOnlySuperAdmin;
                             })
+                            ->default(fn () => Filament::auth()->user()->point_of_sale_id)
+                            ->disabled(fn () => Filament::auth()->user()->point_of_sale_id !== null)
+                            ->dehydrated()
                             ->options(function (Forms\Get $get) {
                                 $companyId = $get('company_id');
                                 if (!$companyId) {

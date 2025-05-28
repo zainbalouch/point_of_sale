@@ -7,9 +7,11 @@ use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Filament\Traits\HasCloseAndRedirect;
 
 class CreateProduct extends CreateRecord
 {
+    use HasCloseAndRedirect;
     protected static string $resource = ProductResource::class;
 
     protected function getRedirectUrl(): string

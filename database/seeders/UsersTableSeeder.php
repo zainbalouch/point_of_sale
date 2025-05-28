@@ -14,12 +14,14 @@ class UsersTableSeeder extends Seeder
     public function run(): void
     {
         $user = User::create([
+           'company_id' => 1,
+           'point_of_sale_id' => 1,
            'first_name' =>  'Super',
            'last_name' =>  'Admin',
-           'email' => 'super_admin@invoicesmanager.com',
-           'password' => bcrypt('password')
+           'email' => 'admin@gmail.com',
+           'password' => bcrypt('12345678')
         ]);
 
-        $user->addRole('super_admin');
+        $user->assignRole('super_admin');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\PointOfSaleResource\Pages;
 use App\Filament\Admin\Resources\PointOfSaleResource\RelationManagers;
 use App\Models\PointOfSale;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -34,6 +35,9 @@ class PointOfSaleResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
+                            ->default(fn () => Filament::auth()->user()->company_id)
+                            ->disabled(fn () => Filament::auth()->user()->company_id !== null)
+                            ->dehydrated()
                             ->columnSpan(['sm' => 2]),
 
                         Forms\Components\TextInput::make('name_en')

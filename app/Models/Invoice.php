@@ -230,7 +230,6 @@ class Invoice extends Model
         static::creating(function ($invoice) {
             // Get the last invoice number for this company, including soft-deleted records
             $lastInvoice = static::withTrashed()
-                ->where('company_id', $invoice->company_id)
                 ->orderBy('number', 'desc')
                 ->first();
 

@@ -65,16 +65,10 @@ return new class extends Migration
             // Laravel timestamps and soft deletes
             $table->timestamps();
             $table->softDeletes();
-        });
 
-
-        // Add indexes for high-read queries
-        Schema::table('orders', function (Blueprint $table) {
             $table->index(['company_id', 'is_active']);
             $table->index(['point_of_sale_id', 'is_active']);
-            $table->unique(['company_id', 'number']);
-            $table->unique(['point_of_sale_id', 'number']);
-
+            $table->unique(['company_id', 'point_of_sale_id', 'number']);
         });
     }
 
