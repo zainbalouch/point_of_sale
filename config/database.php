@@ -93,6 +93,24 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'tenant_template' => [
+            'driver' => 'mysql',
+            'host' => env('TENANTS_DB_HOST', '172.232.206.251'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => null,
+            'username' => null,
+            'password' => null,
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
     ],
 
     /*

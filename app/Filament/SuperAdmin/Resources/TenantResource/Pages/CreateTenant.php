@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 class CreateTenant extends CreateRecord
 {
@@ -22,7 +23,8 @@ class CreateTenant extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $formState = $this->form->getState();
-
+        Log::info('Form state:', ['formState' => $formState]);
+        Log::info('Form data:', ['data' => $data]);
         $subdomain = null;
         if (isset($data['domain'])) { // Prefer $data if Filament decides to pass it
             $subdomain = $data['domain'];

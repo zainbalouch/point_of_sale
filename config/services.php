@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'cpanel' => [
+        'url' => env('CPANEL_URL', 'https://swu.sooqg.com:2083'),
+        'authorization' => env('CPANEL_AUTHORIZATION', 'cpanel start2:V3UTC9UNYGA0GUW24UAR76O00EGUKR5B'),
+        'db_prefix' => env('CPANEL_DB_PREFIX', 'start2_'),
+    ],
+
 ];
