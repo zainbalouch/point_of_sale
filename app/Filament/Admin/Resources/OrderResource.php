@@ -380,747 +380,760 @@ class OrderResource extends Resource
                 //     ->columns(2),
 
                 Forms\Components\Section::make(__('Order Items'))
-                    ->schema([
-                        Forms\Components\Grid::make()
-                            ->schema([
-                                Forms\Components\View::make('filament.components.item-headers')
-                                    ->viewData([
-                                        'headers' => [
-                                            ['label' => __('Product'), 'span' => 2, 'padding' => 20],
-                                            ['label' => __('Quantity'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Unit Price'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Discount'), 'span' => 2, 'padding' => 20],
-                                            ['label' => __('VAT'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Other Taxes'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Total Price'), 'span' => 1, 'padding' => 10],
-                                            ['label' => __('Note'), 'span' => 2, 'padding' => 20],
-                                        ]
-                                    ])
-                                    ->columnSpanFull(),
-                            ])
-                            ->columns(10),
-                        Forms\Components\Repeater::make('items')
-                            ->label(__('Items'))
-                            ->hiddenLabel()
-                            ->relationship()
-                            ->schema([
-                                Forms\Components\Grid::make()
-                                    ->schema([
-                                        Forms\Components\Select::make('product_id')
-                                            ->relationship(
-                                                name: 'product',
-                                                titleAttribute: 'name_en',
-                                                modifyQueryUsing: function (Builder $query, Forms\Get $get) {
-                                                    $user = Filament::auth()->user();
-                                                    // Get all items currently in the repeater
-                                                    $items = $get('../../items') ?? [];
+                ->schema([
+                    // Forms\Components\Grid::make()
+                    //     ->schema([
+                    //         Forms\Components\View::make('filament.components.item-headers')
+                    //             ->viewData([
+                    //                 'headers' => [
+                    //                     ['label' => __('Product'), 'span' => 2, 'padding' => 20],
+                    //                     ['label' => __('Quantity'), 'span' => 1, 'padding' => 10],
+                    //                     ['label' => __('Unit Price'), 'span' => 1, 'padding' => 10],
+                    //                     ['label' => __('Discount'), 'span' => 2, 'padding' => 20],
+                    //                     ['label' => __('VAT'), 'span' => 1, 'padding' => 10],
+                    //                     ['label' => __('Other Taxes'), 'span' => 1, 'padding' => 10],
+                    //                     ['label' => __('Total Price'), 'span' => 1, 'padding' => 10],
+                    //                     ['label' => __('Note'), 'span' => 2, 'padding' => 20],
+                    //                 ]
+                    //             ])
+                    //             ->columnSpanFull(),
+                    //     ])
+                    //     ->columns(10),
+                    Forms\Components\Repeater::make('items')
+                        ->label(__('Items'))
+                        // ->hiddenLabel()
+                        ->relationship()
+                        ->schema([
+                            Forms\Components\Grid::make()
+                                ->schema([
+                                    Forms\Components\Select::make('product_id')
+                                        ->relationship(
+                                            name: 'product',
+                                            titleAttribute: 'name_en',
+                                            modifyQueryUsing: function (Builder $query, Forms\Get $get) {
+                                                $user = Filament::auth()->user();
+                                                // Get all items currently in the repeater
+                                                $items = $get('../../items') ?? [];
 
-                                                    // Extract product IDs that are already selected in other items
-                                                    $selectedProductIds = [];
-                                                    $currentItemKey = $get('../../items')
-                                                        ? array_search($get('..'), $get('../../items'))
-                                                        : null;
+                                                // Extract product IDs that are already selected in other items
+                                                $selectedProductIds = [];
+                                                $currentItemKey = $get('../../items')
+                                                    ? array_search($get('..'), $get('../../items'))
+                                                    : null;
 
-                                                    foreach ($items as $key => $item) {
-                                                        // Skip current item to allow keeping its current product
-                                                        if ($key === $currentItemKey) {
-                                                            continue;
-                                                        }
-
-                                                        if (!empty($item['product_id'])) {
-                                                            $selectedProductIds[] = $item['product_id'];
-                                                        }
+                                                foreach ($items as $key => $item) {
+                                                    // Skip current item to allow keeping its current product
+                                                    if ($key === $currentItemKey) {
+                                                        continue;
                                                     }
 
-                                                    // Exclude already selected products
-                                                    if (!empty($selectedProductIds)) {
-                                                        $query->whereNotIn('id', $selectedProductIds);
+                                                    if (!empty($item['product_id'])) {
+                                                        $selectedProductIds[] = $item['product_id'];
                                                     }
-
-
-                                                    if ($user->point_of_sale_id) {
-                                                        return $query->where('point_of_sale_id', $user->point_of_sale_id);
-                                                    } else {
-                                                        // Access point_of_sale_id from the parent form state
-                                                        $pointOfSaleId = $get('../../point_of_sale_id');
-                                                        return $query->where('point_of_sale_id', $pointOfSaleId);
-                                                    }
-
-                                                    return $query;
                                                 }
-                                            )
-                                            ->label(__('Product'))
-                                            ->hiddenLabel()
-                                            ->required()
-                                            ->searchable()
-                                            ->preload()
-                                            ->live()
-                                            ->createOptionForm([
-                                                Forms\Components\Section::make(__('Product information'))
-                                                    ->schema([
-                                                        Forms\Components\TextInput::make('name_en')
-                                                            ->label(__('Name (English)'))
-                                                            ->required()
-                                                            ->live(onBlur: true)
-                                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                                                $set('slug', Str::slug($state));
-                                                            }),
 
-                                                        Forms\Components\TextInput::make('name_ar')
-                                                            ->label(__('Name (Arabic)'))
-                                                            ->maxLength(255),
+                                                // Exclude already selected products
+                                                if (!empty($selectedProductIds)) {
+                                                    $query->whereNotIn('id', $selectedProductIds);
+                                                }
 
-                                                        Forms\Components\Textarea::make('description_en')
-                                                            ->label(__('Description (English)'))
-                                                            ->maxLength(65535)
-                                                            ->nullable(),
 
-                                                        Forms\Components\Textarea::make('description_ar')
-                                                            ->label(__('Description (Arabic)'))
-                                                            ->maxLength(65535)
-                                                            ->nullable(),
+                                                if ($user->point_of_sale_id) {
+                                                    return $query->where('point_of_sale_id', $user->point_of_sale_id);
+                                                } else {
+                                                    // Access point_of_sale_id from the parent form state
+                                                    $pointOfSaleId = $get('../../point_of_sale_id');
+                                                    return $query->where('point_of_sale_id', $pointOfSaleId);
+                                                }
 
-                                                        Forms\Components\TextInput::make('slug')
-                                                            ->label(__('Slug'))
-                                                            ->required()
-                                                            ->unique('products', 'slug')
-                                                            ->maxLength(255),
+                                                return $query;
+                                            }
+                                        )
+                                        ->label(__('Product'))
+                                        // ->hiddenLabel()
+                                        ->required()
+                                        ->searchable()
+                                        ->preload()
+                                        ->live()
+                                        ->createOptionForm([
+                                            Forms\Components\Section::make(__('Product information'))
+                                                ->schema([
+                                                    Forms\Components\TextInput::make('name_en')
+                                                        ->label(__('Name (English)'))
+                                                        ->required()
+                                                        ->live(onBlur: true)
+                                                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                            $set('slug', Str::slug($state));
+                                                        }),
 
-                                                        Forms\Components\TextInput::make('sku')
-                                                            ->label(__('SKU'))
-                                                            ->unique('products', 'sku')
-                                                            ->maxLength(255),
+                                                    Forms\Components\TextInput::make('name_ar')
+                                                        ->label(__('Name (Arabic)'))
+                                                        ->maxLength(255),
 
-                                                        Forms\Components\TextInput::make('code')
-                                                            ->label(__('Code'))
-                                                            ->unique('products', 'code')
-                                                            ->maxLength(255),
+                                                    Forms\Components\Textarea::make('description_en')
+                                                        ->label(__('Description (English)'))
+                                                        ->maxLength(65535)
+                                                        ->nullable(),
 
-                                                        Forms\Components\Select::make('product_category_id')
-                                                            ->label(__('Product Category'))
-                                                            ->relationship('category', 'name_' . app()->getLocale())
-                                                            ->required()
-                                                            ->searchable()
-                                                            ->preload()
-                                                            ->createOptionForm([
-                                                                Forms\Components\TextInput::make('name_en')
-                                                                    ->label(__('Name (English)'))
-                                                                    ->required()
-                                                                    ->live(onBlur: true)
-                                                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                                                        $set('slug', Str::slug($state));
-                                                                    }),
-                                                                Forms\Components\TextInput::make('name_ar')
-                                                                    ->label(__('Name (Arabic)'))
-                                                                    ->required(),
-                                                                Forms\Components\TextInput::make('slug')
-                                                                    ->label(__('Slug'))
-                                                                    ->required()
-                                                                    ->unique('product_categories', 'slug')
-                                                                    ->maxLength(255),
-                                                                Forms\Components\Select::make('company_id')
-                                                                    ->label(__('Company'))
-                                                                    ->options(function () {
-                                                                        $user = Filament::auth()->user();
+                                                    Forms\Components\Textarea::make('description_ar')
+                                                        ->label(__('Description (Arabic)'))
+                                                        ->maxLength(65535)
+                                                        ->nullable(),
 
-                                                                        // If user has company_id, only show that company
-                                                                        if ($user && $user->company_id) {
-                                                                            return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
-                                                                        }
+                                                    Forms\Components\TextInput::make('slug')
+                                                        ->label(__('Slug'))
+                                                        ->required()
+                                                        ->unique('products', 'slug')
+                                                        ->maxLength(255),
 
-                                                                        // If user has point_of_sale_id but no company_id, get company from point of sale
-                                                                        if ($user && $user->point_of_sale_id) {
-                                                                            $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
-                                                                            if ($pointOfSale && $pointOfSale->company_id) {
-                                                                                return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
-                                                                            }
-                                                                        }
+                                                    Forms\Components\TextInput::make('sku')
+                                                        ->label(__('SKU'))
+                                                        ->unique('products', 'sku')
+                                                        ->maxLength(255),
 
-                                                                        // Otherwise show all companies
-                                                                        return \App\Models\Company::pluck('legal_name', 'id');
-                                                                    })
-                                                                    ->required()
-                                                                    ->searchable()
-                                                                    ->preload()
-                                                                    ->default(function () {
-                                                                        $user = Filament::auth()->user();
+                                                    Forms\Components\TextInput::make('code')
+                                                        ->label(__('Code'))
+                                                        ->unique('products', 'code')
+                                                        ->maxLength(255),
 
-                                                                        // If user has company_id, use it
-                                                                        if ($user && $user->company_id) {
-                                                                            return $user->company_id;
-                                                                        }
+                                                    Forms\Components\Select::make('product_category_id')
+                                                        ->label(__('Product Category'))
+                                                        ->relationship('category', 'name_' . app()->getLocale())
+                                                        ->required()
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->createOptionForm([
+                                                            Forms\Components\TextInput::make('name_en')
+                                                                ->label(__('Name (English)'))
+                                                                ->required()
+                                                                ->live(onBlur: true)
+                                                                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                                    $set('slug', Str::slug($state));
+                                                                }),
+                                                            Forms\Components\TextInput::make('name_ar')
+                                                                ->label(__('Name (Arabic)'))
+                                                                ->required(),
+                                                            Forms\Components\TextInput::make('slug')
+                                                                ->label(__('Slug'))
+                                                                ->required()
+                                                                ->unique('product_categories', 'slug')
+                                                                ->maxLength(255),
+                                                            Forms\Components\Select::make('company_id')
+                                                                ->label(__('Company'))
+                                                                ->options(function () {
+                                                                    $user = Filament::auth()->user();
 
-                                                                        // If user has point_of_sale_id but no company_id, get company from point of sale
-                                                                        if ($user && $user->point_of_sale_id) {
-                                                                            $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
-                                                                            if ($pointOfSale) {
-                                                                                return $pointOfSale->company_id;
-                                                                            }
-                                                                        }
-
-                                                                        return null;
-                                                                    })
-                                                                    ->disabled(function () {
-                                                                        $user = Filament::auth()->user();
-                                                                        // Make disabled if user has company_id or point_of_sale_id
-                                                                        return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
-                                                                    })
-                                                                    ->dehydrated(true) // Ensure the value is submitted when disabled
-                                                                    ->live()
-                                                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                                                        $set('point_of_sale_id', null);
-                                                                    }),
-
-                                                                Forms\Components\Select::make('point_of_sale_id')
-                                                                    ->label(__('Point of Sale'))
-                                                                    ->options(function (Forms\Get $get) {
-                                                                        $companyId = $get('company_id');
-                                                                        $user = Filament::auth()->user();
-
-                                                                        // If user has point_of_sale_id, only show that POS
-                                                                        if ($user && $user->point_of_sale_id) {
-                                                                            return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
-                                                                                ->pluck('name_en', 'id');
-                                                                        }
-
-                                                                        // If no company selected, return empty
-                                                                        if (!$companyId) {
-                                                                            return [];
-                                                                        }
-
-                                                                        // Otherwise show POS from selected company
-                                                                        return \App\Models\PointOfSale::where('company_id', $companyId)
-                                                                            ->where('is_active', true)
-                                                                            ->pluck('name_en', 'id');
-                                                                    })
-                                                                    ->required()
-                                                                    ->default(function () {
-                                                                        $user = Filament::auth()->user();
-                                                                        return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
-                                                                    })
-                                                                    ->disabled(function () {
-                                                                        $user = Filament::auth()->user();
-                                                                        return $user && $user->point_of_sale_id;
-                                                                    })
-                                                                    ->dehydrated(true) // Ensure the value is submitted when disabled
-                                                                    ->searchable(),
-                                                            ])
-                                                            ->createOptionAction(
-                                                                fn (Forms\Components\Actions\Action $action) => $action
-                                                                    ->modalHeading(__('Create Product Category'))
-                                                                    ->modalSubmitActionLabel(__('Create'))
-                                                                    ->modalWidth('md')
-                                                                    ->closeModalByClickingAway(false)
-                                                            ),
-
-                                                        Forms\Components\Select::make('currency_id')
-                                                            ->label(__('Currency'))
-                                                            ->relationship('currency', 'code')
-                                                            ->required()
-                                                            ->searchable()
-                                                            ->preload()
-                                                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
-
-                                                        Forms\Components\TextInput::make('price')
-                                                            ->label(__('Price'))
-                                                            ->numeric()
-                                                            ->required()
-                                                            ->minValue(0)
-                                                            ->live(onBlur: true)
-                                                            ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
-
-                                                        Forms\Components\TextInput::make('quantity')
-                                                            ->label(__('Quantity'))
-                                                            ->numeric()
-                                                            ->required()
-                                                            ->minValue(0)
-                                                            ->default(0),
-
-                                                        Forms\Components\Select::make('company_id')
-                                                            ->label(__('Company'))
-                                                            ->options(function () {
-                                                                $user = Filament::auth()->user();
-
-                                                                // If user has company_id, only show that company
-                                                                if ($user && $user->company_id) {
-                                                                    return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
-                                                                }
-
-                                                                // If user has point_of_sale_id but no company_id, get company from point of sale
-                                                                if ($user && $user->point_of_sale_id) {
-                                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
-                                                                    if ($pointOfSale && $pointOfSale->company_id) {
-                                                                        return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
+                                                                    // If user has company_id, only show that company
+                                                                    if ($user && $user->company_id) {
+                                                                        return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
                                                                     }
-                                                                }
 
-                                                                // Otherwise show all companies
-                                                                return \App\Models\Company::pluck('legal_name', 'id');
-                                                            })
-                                                            ->required()
-                                                            ->searchable()
-                                                            ->preload()
-                                                            ->default(function () {
-                                                                $user = Filament::auth()->user();
-
-                                                                // If user has company_id, use it
-                                                                if ($user && $user->company_id) {
-                                                                    return $user->company_id;
-                                                                }
-
-                                                                // If user has point_of_sale_id but no company_id, get company from point of sale
-                                                                if ($user && $user->point_of_sale_id) {
-                                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
-                                                                    if ($pointOfSale) {
-                                                                        return $pointOfSale->company_id;
+                                                                    // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                                    if ($user && $user->point_of_sale_id) {
+                                                                        $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                        if ($pointOfSale && $pointOfSale->company_id) {
+                                                                            return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
+                                                                        }
                                                                     }
-                                                                }
 
-                                                                return null;
-                                                            })
-                                                            ->disabled(function () {
-                                                                $user = Filament::auth()->user();
-                                                                // Make disabled if user has company_id or point_of_sale_id
-                                                                return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
-                                                            })
-                                                            ->dehydrated(true) // Ensure the value is submitted when disabled
-                                                            ->live()
-                                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                                                $set('point_of_sale_id', null);
-                                                            }),
+                                                                    // Otherwise show all companies
+                                                                    return \App\Models\Company::pluck('legal_name', 'id');
+                                                                })
+                                                                ->required()
+                                                                ->searchable()
+                                                                ->preload()
+                                                                ->default(function () {
+                                                                    $user = Filament::auth()->user();
 
-                                                        Forms\Components\Select::make('point_of_sale_id')
-                                                            ->label(__('Point of Sale'))
-                                                            ->options(function (Forms\Get $get) {
-                                                                $companyId = $get('company_id');
-                                                                $user = Filament::auth()->user();
-
-                                                                // If user has point_of_sale_id, only show that POS
-                                                                if ($user && $user->point_of_sale_id) {
-                                                                    return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
-                                                                        ->pluck('name_en', 'id');
-                                                                }
-
-                                                                // If no company selected, return empty
-                                                                if (!$companyId) {
-                                                                    return [];
-                                                                }
-
-                                                                // Otherwise show POS from selected company
-                                                                return \App\Models\PointOfSale::where('company_id', $companyId)
-                                                                    ->where('is_active', true)
-                                                                    ->pluck('name_en', 'id');
-                                                            })
-                                                            ->required()
-                                                            ->default(function () {
-                                                                $user = Filament::auth()->user();
-                                                                return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
-                                                            })
-                                                            ->disabled(function () {
-                                                                $user = Filament::auth()->user();
-                                                                return $user && $user->point_of_sale_id;
-                                                            })
-                                                            ->dehydrated(true) // Ensure the value is submitted when disabled
-                                                            ->searchable(),
-
-                                                        Forms\Components\CheckboxList::make('taxes')
-                                                            ->label(__('Taxes'))
-                                                            ->relationship(
-                                                                'taxes',
-                                                                fn() => app()->getLocale() === 'en' ? 'name_en' : 'name_ar'
-                                                            )
-                                                            ->options(function (Forms\Get $get) {
-                                                                $user = Filament::auth()->user();
-                                                                $companyId = null;
-
-                                                                // If user has point_of_sale_id, get company from POS
-                                                                if ($user && $user->point_of_sale_id) {
-                                                                    $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
-                                                                    if ($pointOfSale) {
-                                                                        $companyId = $pointOfSale->company_id;
+                                                                    // If user has company_id, use it
+                                                                    if ($user && $user->company_id) {
+                                                                        return $user->company_id;
                                                                     }
-                                                                }
-                                                                // If user has company_id, use it directly
-                                                                elseif ($user && $user->company_id) {
-                                                                    $companyId = $user->company_id;
-                                                                }
-                                                                // Otherwise use the selected company from the form
-                                                                else {
+
+                                                                    // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                                    if ($user && $user->point_of_sale_id) {
+                                                                        $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                        if ($pointOfSale) {
+                                                                            return $pointOfSale->company_id;
+                                                                        }
+                                                                    }
+
+                                                                    return null;
+                                                                })
+                                                                ->disabled(function () {
+                                                                    $user = Filament::auth()->user();
+                                                                    // Make disabled if user has company_id or point_of_sale_id
+                                                                    return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
+                                                                })
+                                                                ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                                ->live()
+                                                                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                                    $set('point_of_sale_id', null);
+                                                                }),
+
+                                                            Forms\Components\Select::make('point_of_sale_id')
+                                                                ->label(__('Point of Sale'))
+                                                                ->options(function (Forms\Get $get) {
                                                                     $companyId = $get('company_id');
+                                                                    $user = Filament::auth()->user();
+
+                                                                    // If user has point_of_sale_id, only show that POS
+                                                                    if ($user && $user->point_of_sale_id) {
+                                                                        return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                                            ->pluck('name_en', 'id');
+                                                                    }
+
+                                                                    // If no company selected, return empty
+                                                                    if (!$companyId) {
+                                                                        return [];
+                                                                    }
+
+                                                                    // Otherwise show POS from selected company
+                                                                    return \App\Models\PointOfSale::where('company_id', $companyId)
+                                                                        ->where('is_active', true)
+                                                                        ->pluck('name_en', 'id');
+                                                                })
+                                                                ->required()
+                                                                ->default(function () {
+                                                                    $user = Filament::auth()->user();
+                                                                    return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
+                                                                })
+                                                                ->disabled(function () {
+                                                                    $user = Filament::auth()->user();
+                                                                    return $user && $user->point_of_sale_id;
+                                                                })
+                                                                ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                                ->searchable(),
+                                                        ])
+                                                        ->createOptionAction(
+                                                            fn(Forms\Components\Actions\Action $action) => $action
+                                                                ->modalHeading(__('Create Product Category'))
+                                                                ->modalSubmitActionLabel(__('Create'))
+                                                                ->modalWidth('md')
+                                                                ->closeModalByClickingAway(false)
+                                                        ),
+
+                                                    Forms\Components\Select::make('currency_id')
+                                                        ->label(__('Currency'))
+                                                        ->relationship('currency', 'code')
+                                                        ->required()
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
+
+                                                    Forms\Components\TextInput::make('price')
+                                                        ->label(__('Price'))
+                                                        ->numeric()
+                                                        ->required()
+                                                        ->minValue(0)
+                                                        ->live(onBlur: true)
+                                                        ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+
+                                                    Forms\Components\TextInput::make('quantity')
+                                                        ->label(__('Quantity'))
+                                                        ->numeric()
+                                                        ->required()
+                                                        ->minValue(0)
+                                                        ->default(0),
+
+                                                    Forms\Components\Select::make('company_id')
+                                                        ->label(__('Company'))
+                                                        ->options(function () {
+                                                            $user = Filament::auth()->user();
+
+                                                            // If user has company_id, only show that company
+                                                            if ($user && $user->company_id) {
+                                                                return \App\Models\Company::where('id', $user->company_id)->pluck('legal_name', 'id');
+                                                            }
+
+                                                            // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                            if ($user && $user->point_of_sale_id) {
+                                                                $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                if ($pointOfSale && $pointOfSale->company_id) {
+                                                                    return \App\Models\Company::where('id', $pointOfSale->company_id)->pluck('legal_name', 'id');
                                                                 }
+                                                            }
 
-                                                                if (!$companyId) {
-                                                                    return [];
+                                                            // Otherwise show all companies
+                                                            return \App\Models\Company::pluck('legal_name', 'id');
+                                                        })
+                                                        ->required()
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->default(function () {
+                                                            $user = Filament::auth()->user();
+
+                                                            // If user has company_id, use it
+                                                            if ($user && $user->company_id) {
+                                                                return $user->company_id;
+                                                            }
+
+                                                            // If user has point_of_sale_id but no company_id, get company from point of sale
+                                                            if ($user && $user->point_of_sale_id) {
+                                                                $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                if ($pointOfSale) {
+                                                                    return $pointOfSale->company_id;
                                                                 }
+                                                            }
 
-                                                                return \App\Models\Tax::query()
-                                                                    ->where('company_id', $companyId)
-                                                                    ->where('is_active', true)
-                                                                    ->pluck(app()->getLocale() === 'en' ? 'name_en' : 'name_ar', 'id')
-                                                                    ->toArray();
-                                                            })
-                                                            ->columns(2)
-                                                            ->live()
-                                                            ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
+                                                            return null;
+                                                        })
+                                                        ->disabled(function () {
+                                                            $user = Filament::auth()->user();
+                                                            // Make disabled if user has company_id or point_of_sale_id
+                                                            return ($user && $user->company_id) || ($user && $user->point_of_sale_id);
+                                                        })
+                                                        ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                        ->live()
+                                                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                            $set('point_of_sale_id', null);
+                                                        }),
 
-                                                        Forms\Components\TextInput::make('sale_price')
-                                                            ->label(__('Sale price (with taxes)'))
-                                                            ->numeric()
-                                                            ->disabled()
-                                                            ->dehydrated(true)
-                                                            ->step(0.01),
-                                                    ])
-                                                    ->columns(2),
-                                            ])
-                                            ->createOptionModalHeading(__('Create New Product'))
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                if (!$state) return;
+                                                    Forms\Components\Select::make('point_of_sale_id')
+                                                        ->label(__('Point of Sale'))
+                                                        ->options(function (Forms\Get $get) {
+                                                            $companyId = $get('company_id');
+                                                            $user = Filament::auth()->user();
 
-                                                $product = Product::find($state);
-                                                if (!$product) return;
+                                                            // If user has point_of_sale_id, only show that POS
+                                                            if ($user && $user->point_of_sale_id) {
+                                                                return \App\Models\PointOfSale::where('id', $user->point_of_sale_id)
+                                                                    ->pluck('name_en', 'id');
+                                                            }
 
-                                                // Clear previous values first
-                                                $set('product_name_en', null);
-                                                $set('product_name_ar', null);
-                                                $set('product_description_en', null);
-                                                $set('product_description_ar', null);
-                                                $set('product_sku', null);
-                                                $set('unit_price', null);
-                                                $set('vat_amount', 0);
-                                                $set('other_taxes_amount', 0);
+                                                            // If no company selected, return empty
+                                                            if (!$companyId) {
+                                                                return [];
+                                                            }
 
-                                                // Set new values
-                                                $set('product_name_en', $product->name_en);
-                                                $set('product_name_ar', $product->name_ar);
-                                                $set('product_description_en', $product->description_en);
-                                                $set('product_description_ar', $product->description_ar);
-                                                $set('product_sku', $product->sku);
-                                                $set('unit_price', $product->price);
+                                                            // Otherwise show POS from selected company
+                                                            return \App\Models\PointOfSale::where('company_id', $companyId)
+                                                                ->where('is_active', true)
+                                                                ->pluck('name_en', 'id');
+                                                        })
+                                                        ->required()
+                                                        ->default(function () {
+                                                            $user = Filament::auth()->user();
+                                                            return $user && $user->point_of_sale_id ? $user->point_of_sale_id : null;
+                                                        })
+                                                        ->disabled(function () {
+                                                            $user = Filament::auth()->user();
+                                                            return $user && $user->point_of_sale_id;
+                                                        })
+                                                        ->dehydrated(true) // Ensure the value is submitted when disabled
+                                                        ->searchable(),
 
-                                                // Initial tax rates - will be recalculated after discount
-                                                $vatRate = $product->getVatAmount() / $product->price;
-                                                $otherTaxesRate = $product->getOtherTaxesAmount() / $product->price;
+                                                    Forms\Components\CheckboxList::make('taxes')
+                                                        ->label(__('Taxes'))
+                                                        ->relationship(
+                                                            'taxes',
+                                                            fn() => app()->getLocale() === 'en' ? 'name_en' : 'name_ar'
+                                                        )
+                                                        ->options(function (Forms\Get $get) {
+                                                            $user = Filament::auth()->user();
+                                                            $companyId = null;
 
-                                                // Store the rates for later use
-                                                $set('vat_rate', $vatRate);
-                                                $set('other_taxes_rate', $otherTaxesRate);
+                                                            // If user has point_of_sale_id, get company from POS
+                                                            if ($user && $user->point_of_sale_id) {
+                                                                $pointOfSale = \App\Models\PointOfSale::find($user->point_of_sale_id);
+                                                                if ($pointOfSale) {
+                                                                    $companyId = $pointOfSale->company_id;
+                                                                }
+                                                            }
+                                                            // If user has company_id, use it directly
+                                                            elseif ($user && $user->company_id) {
+                                                                $companyId = $user->company_id;
+                                                            }
+                                                            // Otherwise use the selected company from the form
+                                                            else {
+                                                                $companyId = $get('company_id');
+                                                            }
 
-                                                // Calculate item values and update the form
-                                                self::calculateOrderItemValues($get, $set);
-                                            })
-                                            ->columnSpan(2),
-                                        Forms\Components\TextInput::make('quantity')
-                                            ->label(__('Quantity'))
-                                            ->hiddenLabel()
-                                            ->required()
-                                            ->numeric()
-                                            ->default(1)
-                                            // ->maxValue(function (Forms\Get $get) {
-                                            //     $productId = $get('product_id');
-                                            //     if (!$productId) return null;
+                                                            if (!$companyId) {
+                                                                return [];
+                                                            }
 
-                                            //     $product = \App\Models\Product::find($productId);
-                                            //     return $product ? $product->quantity : null;
-                                            // })
-                                            // ->helperText(function (Forms\Get $get) {
-                                            //     $productId = $get('product_id');
-                                            //     if (!$productId) return null;
+                                                            return \App\Models\Tax::query()
+                                                                ->where('company_id', $companyId)
+                                                                ->where('is_active', true)
+                                                                ->pluck(app()->getLocale() === 'en' ? 'name_en' : 'name_ar', 'id')
+                                                                ->toArray();
+                                                        })
+                                                        ->columns(2)
+                                                        ->live()
+                                                        ->afterStateUpdated(fn(Forms\Set $set, Forms\Get $get) => self::calculateSalePrice($set, $get)),
 
-                                            //     $product = \App\Models\Product::find($productId);
-                                            //     return $product ? __('Stock remaining: :quantity', ['quantity' => $product->quantity]) : null;
-                                            // })
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                self::calculateOrderItemValues($get, $set);
-                                            })
-                                            ->columnSpan(1),
-                                        Forms\Components\TextInput::make('unit_price')
-                                            ->label(__('Unit Price'))
-                                            ->hiddenLabel()
-                                            ->required()
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                self::calculateOrderItemValues($get, $set);
-                                            })
-                                            ->columnSpan(1),
+                                                    Forms\Components\TextInput::make('sale_price')
+                                                        ->label(__('Sale price (with taxes)'))
+                                                        ->numeric()
+                                                        ->disabled()
+                                                        ->dehydrated(true)
+                                                        ->step(0.01),
+                                                ])
+                                                ->columns(2),
+                                        ])
+                                        ->createOptionModalHeading(__('Create New Product'))
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            if (!$state) return;
 
-                                        Forms\Components\TextInput::make('discount_amount')
-                                            ->label(__('Discount'))
-                                            ->hiddenLabel()
-                                            ->numeric()
-                                            ->dehydrated(true)
-                                            ->default(0)
-                                            ->minValue(0)
-                                            ->live(onBlur: true)
-                                            ->prefix(fn(Forms\Get $get) => $get('discount_type') === 'percentage' ? '%' : Setting::get('default_currency') ?? 'SAR')
-                                            ->suffixAction(
-                                                Forms\Components\Actions\Action::make('changeDiscountType')
-                                                    ->icon('heroicon-o-cog')
-                                                    ->tooltip(fn(Forms\Get $get) => $get('discount_type') === 'fixed'
-                                                        ? __('Switch to percentage discount (%)')
-                                                        : __('Switch to fixed amount discount ($)'))
-                                                    ->action(function (Forms\Set $set, Forms\Get $get) {
-                                                        // Toggle between fixed and percentage
-                                                        $currentType = $get('discount_type');
-                                                        $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
-                                                        $set('discount_type', $newType);
+                                            $product = Product::find($state);
+                                            if (!$product) return;
 
-                                                        // Explicitly trigger calculation
-                                                        self::calculateOrderItemValues($get, $set);
-                                                    })
-                                            )
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                self::calculateOrderItemValues($get, $set);
-                                            })
-                                            ->columnSpan(2),
-                                        Forms\Components\Hidden::make('discount_type')
-                                            ->default('fixed')
-                                            ->dehydrated(true)
-                                            ->live()
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
-                                                self::calculateOrderItemValues($get, $set);
-                                            }),
+                                            // Clear previous values first
+                                            $set('product_name_en', null);
+                                            $set('product_name_ar', null);
+                                            $set('product_description_en', null);
+                                            $set('product_description_ar', null);
+                                            $set('product_sku', null);
+                                            $set('unit_price', null);
+                                            $set('vat_amount', 0);
+                                            $set('other_taxes_amount', 0);
 
-                                        Forms\Components\TextInput::make('vat_amount')
-                                            ->label(__('VAT'))
-                                            ->hiddenLabel()
-                                            ->numeric()
-                                            ->dehydrated(true)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                // Mark as manually edited
-                                                $set('vat_amount_is_manual', true);
-                                                self::calculateOrderItemValues($get, $set);
-                                            })
-                                            ->columnSpan(1),
+                                            // Set new values
+                                            $set('product_name_en', $product->name_en);
+                                            $set('product_name_ar', $product->name_ar);
+                                            $set('product_description_en', $product->description_en);
+                                            $set('product_description_ar', $product->description_ar);
+                                            $set('product_sku', $product->sku);
+                                            $set('unit_price', $product->price);
 
-                                        Forms\Components\TextInput::make('other_taxes_amount')
-                                            ->label(__('Other Taxes'))
-                                            ->hiddenLabel()
-                                            ->numeric()
-                                            ->dehydrated(true)
-                                            ->default(0)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                // Mark as manually edited
-                                                $set('other_taxes_amount_is_manual', true);
-                                                self::calculateOrderItemValues($get, $set);
-                                            })
-                                            ->columnSpan(1),
+                                            // Initial tax rates - will be recalculated after discount
+                                            $vatRate = $product->getVatAmount() / $product->price;
+                                            $otherTaxesRate = $product->getOtherTaxesAmount() / $product->price;
 
-                                        Forms\Components\TextInput::make('total_price')
-                                            ->label(__('Total Price'))
-                                            ->hiddenLabel()
-                                            ->required()
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->columnSpan(1),
-                                        Forms\Components\Textarea::make('note')
-                                            ->rows(1)
-                                            ->label(__('Note'))
-                                            ->hiddenLabel()
-                                            ->placeholder(__('Add a note for this item'))
-                                            ->nullable()
-                                            ->dehydrated(true)
-                                            ->columnSpan(2),
-                                    ])
-                                    ->columns(11),
-                                Forms\Components\Hidden::make('product_name_en')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('product_name_ar')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('product_description_en')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('product_description_ar')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('product_sku')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('vat_rate')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('other_taxes_rate')
-                                    ->nullable(),
-                                Forms\Components\Hidden::make('vat_amount_is_manual')
-                                    ->default(false),
-                                Forms\Components\Hidden::make('other_taxes_amount_is_manual')
-                                    ->default(false),
-                            ])
-                            ->defaultItems(1)
-                            ->reorderable(false)
-                            // ->cloneable()
-                            ->itemLabel(function (array $state): ?string {
-                                $productName = $state['product_name_en'] ?? null;
-                                $quantity = $state['quantity'] ?? 0;
-                                $totalPrice = $state['total_price'] ?? 0;
-                                if (!$productName) return null;
+                                            // Store the rates for later use
+                                            $set('vat_rate', $vatRate);
+                                            $set('other_taxes_rate', $otherTaxesRate);
 
-                                return "{$productName}: {$quantity} " . __('units') . " | " . __('Total amount') . ": {$totalPrice}";
-                            })
-                            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
-                                self::calculateOrderTotalsOnRepeaterUpdate($set, $get);
-                            })
-                            ->live(onBlur: true),
+                                            // Calculate item values and update the form
+                                            self::calculateOrderItemValues($get, $set);
+                                        })
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 2,
+                                        ]),
+                                    Forms\Components\TextInput::make('quantity')
+                                        ->label(__('Quantity'))
+                                        // ->hiddenLabel()
+                                        ->required()
+                                        ->numeric()
+                                        ->default(1)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            self::calculateOrderItemValues($get, $set);
+                                        })
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 1,
+                                        ]),
+                                    Forms\Components\TextInput::make('unit_price')
+                                        ->label(__('Unit Price'))
+                                        // ->hiddenLabel()
+                                        ->required()
+                                        ->numeric()
+                                        ->minValue(0)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            self::calculateOrderItemValues($get, $set);
+                                        })
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 1,
+                                        ]),
 
-                        Forms\Components\Grid::make()
-                            ->schema([
-                                Forms\Components\Placeholder::make('summary_heading')
-                                    ->label('')
-                                    ->content(__('Order Summary'))
-                                    ->extraAttributes(['class' => 'text-xl font-bold pb-2'])
-                                    ->columnSpanFull(),
+                                    Forms\Components\TextInput::make('discount_amount')
+                                        ->label(__('Discount'))
+                                        // ->hiddenLabel()
+                                        ->numeric()
+                                        ->dehydrated(true)
+                                        ->default(0)
+                                        ->minValue(0)
+                                        ->live(onBlur: true)
+                                        ->prefix(fn(Forms\Get $get) => $get('discount_type') === 'percentage' ? '%' : Setting::get('default_currency') ?? 'SAR')
+                                        ->suffixAction(
+                                            Forms\Components\Actions\Action::make('changeDiscountType')
+                                                ->icon('heroicon-o-cog')
+                                                ->tooltip(fn(Forms\Get $get) => $get('discount_type') === 'fixed'
+                                                    ? __('Switch to percentage discount (%)')
+                                                    : __('Switch to fixed amount discount ($)'))
+                                                ->action(function (Forms\Set $set, Forms\Get $get) {
+                                                    // Toggle between fixed and percentage
+                                                    $currentType = $get('discount_type');
+                                                    $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
+                                                    $set('discount_type', $newType);
 
-                                // Left Column
-                                Forms\Components\Grid::make()
-                                    ->schema([
-                                        Forms\Components\Select::make('order_status_id')
-                                            ->relationship('status', 'name_en')
-                                            ->label(__('Order Status'))
-                                            ->required()
-                                            ->searchable()
-                                            ->preload()
-                                            ->default(fn() => \App\Models\OrderStatus::where('name_en', 'New')->first()?->id),
-                                        Forms\Components\Select::make('payment_method_id')
-                                            ->relationship('paymentMethod', 'name_en')
-                                            ->label(__('Payment Method'))
-                                            ->required()
-                                            ->searchable()
-                                            ->default(fn() => PaymentMethod::where('name_en', Setting::get('default_payment_methode'))->first()?->id)
-                                            ->preload(),
-                                        Forms\Components\Select::make('currency_id')
-                                            ->relationship('currency', 'code')
-                                            ->label(__('Currency'))
-                                            ->required()
-                                            ->default(function () {
-                                                return Currency::where('code', Setting::get('default_currency'))->first()?->id;
-                                            })
-                                            ->searchable()
-                                            ->preload()
-                                            ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
-                                        Forms\Components\TextInput::make('amount_paid')
-                                            ->label(__('Amount Paid'))
-                                            ->numeric()
-                                            ->required()
-                                            ->minValue(0)
-                                            ->default(0)
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                $amountPaid = floatval($state ?? 0);
-                                                $total = floatval($get('total') ?? 0);
-                                                $balanceLeft = $total - $amountPaid;
-                                                $set('balance_left', number_format($balanceLeft, 2, '.', ''));
-                                            })
-                                            ->dehydrated(true),
-                                        Forms\Components\TextInput::make('balance_left')
-                                            ->label(__('Balance Left'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                            ->extraAttributes(['class' => 'text-danger-600 font-bold']),
-                                    ])
-                                    ->columnSpan(['md' => 6])
-                                    ->columns(1),
+                                                    // Explicitly trigger calculation
+                                                    self::calculateOrderItemValues($get, $set);
+                                                })
+                                        )
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            self::calculateOrderItemValues($get, $set);
+                                        })
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 2,
+                                        ]),
+                                    Forms\Components\Hidden::make('discount_type')
+                                        ->default('fixed')
+                                        ->dehydrated(true)
+                                        ->live()
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                                            self::calculateOrderItemValues($get, $set);
+                                        }),
 
-                                // Right Column
-                                Forms\Components\Grid::make()
-                                    ->schema([
-                                        Forms\Components\Hidden::make('products_discount')
-                                            ->default(0)
-                                            ->dehydrated(true),
-                                        Forms\Components\Hidden::make('subtotal')
-                                            ->default(0)
-                                            ->dehydrated(true),
-                                        Forms\Components\Hidden::make('discount_manually_set')
-                                            ->default(false)
-                                            ->dehydrated(true),
-                                        Forms\Components\Hidden::make('order_discount_type')
-                                            ->default('fixed')
-                                            ->dehydrated(true),
-                                        Forms\Components\TextInput::make('subtotal_after_discount')
-                                            ->label(__('Subtotal After Discount'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated(true)
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                                        Forms\Components\TextInput::make('discount')
-                                            ->label(__('Other Discounts'))
-                                            ->numeric()
-                                            ->dehydrated(true)
-                                            ->default(0)
-                                            ->prefix(fn($get) => $get('discount_type') === 'percentage' ? '%' : ($get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''))
-                                            ->suffixAction(
-                                                Forms\Components\Actions\Action::make('changeOtherDiscountType')
-                                                    ->icon('heroicon-o-cog')
-                                                    ->tooltip(fn(Forms\Get $get) => $get('discount_type') === 'fixed'
-                                                        ? __('Switch to percentage discount (%)')
-                                                        : __('Switch to fixed amount discount ($)'))
-                                                    ->action(function (Forms\Set $set, Forms\Get $get) {
-                                                        // Toggle between fixed and percentage
-                                                        $currentType = $get('discount_type');
-                                                        $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
-                                                        $set('discount_type', $newType);
+                                    Forms\Components\TextInput::make('vat_amount')
+                                        ->label(__('VAT'))
+                                        // ->hiddenLabel()
+                                        ->numeric()
+                                        ->dehydrated(true)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            // Mark as manually edited
+                                            $set('vat_amount_is_manual', true);
+                                            self::calculateOrderItemValues($get, $set);
+                                        })
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 1,
+                                        ]),
 
-                                                        // Recalculate totals
-                                                        self::recalculateOrderTotals($set, $get);
-                                                    })
-                                            )
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                                self::recalculateOrderTotals($set, $get);
-                                            }),
-                                        Forms\Components\Hidden::make('discount_type')
-                                            ->default('fixed')
-                                            ->dehydrated(true)
-                                            ->live()
-                                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
-                                                self::recalculateOrderTotals($set, $get);
-                                            }),
-                                        Forms\Components\Hidden::make('subtotal_after_other_discount')
-                                            ->default(0)
-                                            ->dehydrated(false),
-                                        Forms\Components\TextInput::make('vat')
-                                            ->label(__('Total VAT Amount'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                                        Forms\Components\TextInput::make('other_taxes')
-                                            ->label(__('Total Other Taxes'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                            ->visible(fn(Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) > 0),
-                                        Forms\Components\Hidden::make('other_taxes_hidden')
-                                            ->dehydrated(false)
-                                            ->visible(fn(Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) == 0),
-                                        Forms\Components\TextInput::make('discount_totals')
-                                            ->label(__('Discounts Total'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
-                                        Forms\Components\TextInput::make('total')
-                                            ->label(__('Total'))
-                                            ->numeric()
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
-                                            ->extraAttributes(['class' => 'text-primary-600 font-bold']),
-                                    ])
-                                    ->columnSpan(['md' => 6])
-                                    ->columns(1),
-                            ])
-                            ->columns(12)
-                            ->extraAttributes(['class' => 'border rounded-xl p-4 bg-gray-50 mt-4']),
-                    ])
-                    ->collapsible(),
+                                    Forms\Components\TextInput::make('other_taxes_amount')
+                                        ->label(__('Other Taxes'))
+                                        // ->hiddenLabel()
+                                        ->numeric()
+                                        ->dehydrated(true)
+                                        ->default(0)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            // Mark as manually edited
+                                            $set('other_taxes_amount_is_manual', true);
+                                            self::calculateOrderItemValues($get, $set);
+                                        })
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 1,
+                                        ]),
 
-                Forms\Components\Section::make(__('Order Details'))
+                                    Forms\Components\TextInput::make('total_price')
+                                        ->label(__('Total Price'))
+                                        // ->hiddenLabel()
+                                        ->required()
+                                        ->numeric()
+                                        ->minValue(0)
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 1,
+                                        ]),
+                                    Forms\Components\Textarea::make('note')
+                                        ->rows(1)
+                                        ->label(__('Note'))
+                                        // ->hiddenLabel()
+                                        ->placeholder(__('Add a note for this item'))
+                                        ->nullable()
+                                        ->dehydrated(true)
+                                        ->columnSpan([
+                                            'sm' => 1,
+                                            'xl' => 2,
+                                        ]),
+                                ])
+                                ->columns([
+                                    'sm' => 2,
+                                    'xl' => 11,
+                                ]),
+                            Forms\Components\Hidden::make('product_name_en')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('product_name_ar')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('product_description_en')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('product_description_ar')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('product_sku')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('vat_rate')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('other_taxes_rate')
+                                ->nullable(),
+                            Forms\Components\Hidden::make('vat_amount_is_manual')
+                                ->default(false),
+                            Forms\Components\Hidden::make('other_taxes_amount_is_manual')
+                                ->default(false),
+                        ])
+                        ->defaultItems(1)
+                        ->reorderable(false)
+                        // ->cloneable()
+                        ->itemLabel(function (array $state): ?string {
+                            $productName = $state['product_name_en'] ?? null;
+                            $quantity = $state['quantity'] ?? 0;
+                            $totalPrice = $state['total_price'] ?? 0;
+                            if (!$productName) return null;
+
+                            return "{$productName}: {$quantity} " . __('units') . " | " . __('Total amount') . ": {$totalPrice}";
+                        })
+                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                            self::calculateOrderTotalsOnRepeaterUpdate($set, $get);
+                        })
+                        ->live(onBlur: true),
+
+                    Forms\Components\Grid::make()
+                        ->schema([
+                            Forms\Components\Placeholder::make('summary_heading')
+                                ->label('')
+                                ->content(__('Order Summary'))
+                                ->extraAttributes(['class' => 'text-xl font-bold pb-2'])
+                                ->columnSpanFull(),
+
+                            // Left Column
+                            Forms\Components\Grid::make()
+                                ->schema([
+                                    Forms\Components\Select::make('order_status_id')
+                                        ->relationship('status', 'name_en')
+                                        ->label(__('Order Status'))
+                                        ->required()
+                                        ->searchable()
+                                        ->preload()
+                                        ->default(fn() => \App\Models\OrderStatus::where('name_en', 'New')->first()?->id),
+                                    Forms\Components\Select::make('payment_method_id')
+                                        ->relationship('paymentMethod', 'name_en')
+                                        ->label(__('Payment Method'))
+                                        ->required()
+                                        ->searchable()
+                                        ->default(fn() => PaymentMethod::where('name_en', Setting::get('default_payment_methode'))->first()?->id)
+                                        ->preload(),
+                                    Forms\Components\Select::make('currency_id')
+                                        ->relationship('currency', 'code')
+                                        ->label(__('Currency'))
+                                        ->required()
+                                        ->default(function () {
+                                            return Currency::where('code', Setting::get('default_currency'))->first()?->id;
+                                        })
+                                        ->searchable()
+                                        ->preload()
+                                        ->default(fn() => Currency::where('code', 'SAR')->first()?->id),
+                                    Forms\Components\TextInput::make('amount_paid')
+                                        ->label(__('Amount Paid'))
+                                        ->numeric()
+                                        ->required()
+                                        ->minValue(0)
+                                        ->default(0)
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            $amountPaid = floatval($state ?? 0);
+                                            $total = floatval($get('total') ?? 0);
+                                            $balanceLeft = $total - $amountPaid;
+                                            $set('balance_left', number_format($balanceLeft, 2, '.', ''));
+                                        })
+                                        ->dehydrated(true),
+                                    Forms\Components\TextInput::make('balance_left')
+                                        ->label(__('Balance Left'))
+                                        ->numeric()
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                        ->extraAttributes(['class' => 'text-danger-600 font-bold']),
+                                ])
+                                ->columnSpan(['md' => 6])
+                                ->columns(1),
+
+                            // Right Column
+                            Forms\Components\Grid::make()
+                                ->schema([
+                                    Forms\Components\Hidden::make('products_discount')
+                                        ->default(0)
+                                        ->dehydrated(true),
+                                    Forms\Components\Hidden::make('subtotal')
+                                        ->default(0)
+                                        ->dehydrated(true),
+                                    Forms\Components\Hidden::make('discount_manually_set')
+                                        ->default(false)
+                                        ->dehydrated(true),
+                                    Forms\Components\Hidden::make('order_discount_type')
+                                        ->default('fixed')
+                                        ->dehydrated(true),
+                                    Forms\Components\TextInput::make('subtotal_after_discount')
+                                        ->label(__('Subtotal After Discount'))
+                                        ->numeric()
+                                        ->disabled()
+                                        ->dehydrated(true)
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                    Forms\Components\TextInput::make('discount')
+                                        ->label(__('Other Discounts'))
+                                        ->numeric()
+                                        ->dehydrated(true)
+                                        ->default(0)
+                                        ->prefix(fn($get) => $get('discount_type') === 'percentage' ? '%' : ($get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''))
+                                        ->suffixAction(
+                                            Forms\Components\Actions\Action::make('changeOtherDiscountType')
+                                                ->icon('heroicon-o-cog')
+                                                ->tooltip(fn(Forms\Get $get) => $get('discount_type') === 'fixed'
+                                                    ? __('Switch to percentage discount (%)')
+                                                    : __('Switch to fixed amount discount ($)'))
+                                                ->action(function (Forms\Set $set, Forms\Get $get) {
+                                                    // Toggle between fixed and percentage
+                                                    $currentType = $get('discount_type');
+                                                    $newType = $currentType === 'fixed' ? 'percentage' : 'fixed';
+                                                    $set('discount_type', $newType);
+
+                                                    // Recalculate totals
+                                                    self::recalculateOrderTotals($set, $get);
+                                                })
+                                        )
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
+                                            self::recalculateOrderTotals($set, $get);
+                                        }),
+                                    Forms\Components\Hidden::make('discount_type')
+                                        ->default('fixed')
+                                        ->dehydrated(true)
+                                        ->live()
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                                            self::recalculateOrderTotals($set, $get);
+                                        }),
+                                    Forms\Components\Hidden::make('subtotal_after_other_discount')
+                                        ->default(0)
+                                        ->dehydrated(false),
+                                    Forms\Components\TextInput::make('vat')
+                                        ->label(__('Total VAT Amount'))
+                                        ->numeric()
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                    Forms\Components\TextInput::make('other_taxes')
+                                        ->label(__('Total Other Taxes'))
+                                        ->numeric()
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                        ->visible(fn(Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) > 0),
+                                    Forms\Components\Hidden::make('other_taxes_hidden')
+                                        ->dehydrated(false)
+                                        ->visible(fn(Forms\Get $get): bool => floatval($get('other_taxes') ?? 0) == 0),
+                                    Forms\Components\TextInput::make('discount_totals')
+                                        ->label(__('Discounts Total'))
+                                        ->numeric()
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : ''),
+                                    Forms\Components\TextInput::make('total')
+                                        ->label(__('Total'))
+                                        ->numeric()
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->prefix(fn($get) => $get('currency_id') ? Currency::find($get('currency_id'))?->symbol : '')
+                                        ->extraAttributes(['class' => 'text-primary-600 font-bold']),
+                                ])
+                                ->columnSpan(['md' => 6])
+                                ->columns(1),
+                        ])
+                        ->columns(12)
+                        ->extraAttributes(['class' => 'border rounded-xl p-4 bg-gray-50 mt-4']),
+                ])
+                ->collapsible(),
+
+            Forms\Components\Section::make(__('Order Details'))
                     ->schema([
                         Forms\Components\DateTimePicker::make('estimated_delivery_at')
                             ->label(__('Estimated Delivery At')),
